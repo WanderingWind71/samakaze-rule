@@ -160,6 +160,10 @@
                 linear-gradient(90deg, rgba(63, 63, 70, 0.08) 1px, transparent 1px);
             background-size: 24px 24px;
         }
+
+        .dashboard-card {
+            transition: all 0.2s ease;
+        }
     </style>
 </head>
 <body class="bg-zinc-950 text-zinc-200 dark">
@@ -288,14 +292,50 @@
                             <span class="text-xs text-zinc-500">check-ins</span>
                         </div>
                     </div>
-                    <div class="bg-zinc-900 border border-zinc-800 rounded-3xl px-5 py-4 flex flex-col justify-center">
-                        <div onclick="showSection('scripture')" class="cursor-pointer flex items-center justify-between group">
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-3xl px-5 py-4 flex flex-col justify-center cursor-pointer" onclick="showJourneyModal()">
+                        <div class="flex items-center justify-between">
                             <div>
-                                <div class="text-xs uppercase tracking-[1.5px] text-zinc-500">Word for today</div>
-                                <div class="text-sm text-amber-400 group-hover:underline">Draw a verse →</div>
+                                <div class="text-xs uppercase tracking-[1.5px] text-zinc-500">My Journey</div>
+                                <div class="text-sm text-amber-400">View progress &amp; insights →</div>
                             </div>
-                            <i class="fa-solid fa-book text-xl text-amber-600/70 group-hover:text-amber-500 transition-colors"></i>
+                            <i class="fa-solid fa-chart-line text-xl text-amber-600/70"></i>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Daily Word + Gentle Invitation Row -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+                    
+                    <!-- Daily Word -->
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 dashboard-card">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-x-2">
+                                <i class="fa-solid fa-book text-amber-500"></i>
+                                <span class="font-semibold">Word for Today</span>
+                            </div>
+                            <button onclick="refreshDailyWord()" class="text-xs px-3 py-1 rounded-2xl border border-zinc-700 hover:bg-zinc-800 flex items-center gap-x-1">
+                                <i class="fa-solid fa-sync text-xs"></i>
+                                <span>New Word</span>
+                            </button>
+                        </div>
+                        <div id="daily-word-content">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Today's Gentle Invitation -->
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 dashboard-card">
+                        <div class="flex items-center gap-x-2 mb-3">
+                            <i class="fa-solid fa-seedling text-emerald-500"></i>
+                            <span class="font-semibold">Today’s Gentle Invitation</span>
+                        </div>
+                        <div id="gentle-invitation-content" class="text-sm text-zinc-300 min-h-[60px]">
+                            <!-- Populated by JS -->
+                        </div>
+                        <button onclick="actOnGentleInvitation()" 
+                                class="mt-4 w-full py-2.5 text-sm rounded-2xl bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center gap-x-2 text-white">
+                            <span>Mark this practice done</span>
+                        </button>
                     </div>
                 </div>
 
@@ -304,7 +344,7 @@
                     <h3 class="font-semibold text-lg tracking-tight">Your 9 Practices</h3>
                     <div class="text-xs px-3 py-1 bg-zinc-900 rounded-2xl border border-zinc-800 text-zinc-400 flex items-center gap-x-1.5">
                         <i class="fa-solid fa-info-circle"></i>
-                        <span>Tap a card to see history</span>
+                        <span>Tap a card to see history &amp; journal</span>
                     </div>
                 </div>
 
@@ -511,7 +551,7 @@
             </div>
             
             <div class="p-6" id="modal-body">
-                <!-- Dynamic content -->
+                <!-- Dynamic content including journal -->
             </div>
             
             <div class="px-6 py-4 bg-zinc-950 border-t border-zinc-800 flex justify-end gap-x-3">
@@ -521,6 +561,26 @@
                     <i class="fa-solid fa-check"></i>
                     <span>Mark Today</span>
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Journey / Progress Summary Modal -->
+    <div id="journey-modal" onclick="if (event.target.id === 'journey-modal') closeJourneyModal()" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div onclick="event.stopImmediatePropagation()" class="modal bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-3xl p-6">
+            <div class="flex justify-between items-center mb-5">
+                <h3 class="font-semibold text-xl">My Journey</h3>
+                <button onclick="closeJourneyModal()" class="text-zinc-400 hover:text-white">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div id="journey-content" class="space-y-4 text-sm">
+                <!-- Populated by JS -->
+            </div>
+            
+            <div class="mt-6 text-center">
+                <button onclick="closeJourneyModal()" class="px-6 py-2 text-sm rounded-2xl border border-zinc-700 hover:bg-zinc-900">Close</button>
             </div>
         </div>
     </div>
@@ -546,7 +606,8 @@
 
         // Data model
         let data = {
-            completions: {}, // { "sabbath": ["2026-07-05", "2026-07-04", ...], ... }
+            completions: {},
+            journals: {},           // { "sabbath": { "2026-07-11": "note text" } }
             lastUpdated: null
         };
 
@@ -554,7 +615,7 @@
             { id: 'sabbath', name: 'Sabbath', emoji: '🕊️', shortDesc: 'Rest from striving. Delight in God and creation one day each week.', accent: 'teal' },
             { id: 'solitude', name: 'Solitude', emoji: '🌲', shortDesc: 'Withdrawing from noise and people to be alone with God.', accent: 'emerald' },
             { id: 'prayer', name: 'Prayer', emoji: '🙏', shortDesc: 'Speaking honestly with God and learning to listen.', accent: 'indigo' },
-            { id: 'fasting', name: 'Fasting', emoji: '🌾', shortDesc: 'Abstaining from food or comforts to feast on God.', accent: 'amber' },
+            { id: 'fasting', name: 'Fasting', emoji: '🌾', shortDesc: 'Abstaining to feast on God\'s presence.', accent: 'amber' },
             { id: 'scripture', name: 'Scripture', emoji: '📜', shortDesc: 'Reading, meditating, and hiding God\'s Word in your heart.', accent: 'orange' },
             { id: 'community', name: 'Community', emoji: '🤝', shortDesc: 'Gathering with other believers for encouragement and worship.', accent: 'sky' },
             { id: 'generosity', name: 'Generosity', emoji: '💚', shortDesc: 'Cheerful giving of time, money, and resources.', accent: 'rose' },
@@ -562,7 +623,7 @@
             { id: 'witness', name: 'Witness', emoji: '✨', shortDesc: 'Sharing the hope and love of Jesus through word and life.', accent: 'violet' }
         ];
 
-        // Scripture library (curated, relevant, gentle)
+        // Scripture library
         const VERSES = [
             { id: 1, ref: "Matthew 11:28-30", text: "Come to me, all who labor and are heavy laden, and I will give you rest. Take my yoke upon you, and learn from me, for I am gentle and lowly in heart, and you will find rest for your souls. For my yoke is easy, and my burden is light.", tags: ["sabbath", "prayer", "rest"] },
             { id: 2, ref: "Psalm 46:10", text: "Be still, and know that I am God. I will be exalted among the nations, I will be exalted in the earth!", tags: ["solitude", "prayer", "sabbath"] },
@@ -588,7 +649,6 @@
             { id: 22, ref: "Ephesians 2:8-10", text: "For by grace you have been saved through faith. And this is not your own doing; it is the gift of God, not a result of works, so that no one may boast. For we are his workmanship, created in Christ Jesus for good works...", tags: ["generosity", "service", "witness"] }
         ];
 
-        // Gentle affirmations for toasts
         const AFFIRMATIONS = [
             "New mercies every morning. You're held.",
             "Small steps of faithfulness are seen by the Father.",
@@ -602,6 +662,9 @@
             "Rest is holy. You've done enough today."
         ];
 
+        let currentGentlePracticeId = null;
+        let currentDailyWord = null;
+
         function getToday() {
             const d = new Date();
             return d.toISOString().split('T')[0];
@@ -609,45 +672,34 @@
 
         function getWeekStart(date) {
             const d = new Date(date);
-            const day = d.getDay(); // 0 = Sunday
+            const day = d.getDay();
             d.setDate(d.getDate() - day);
             d.setHours(0, 0, 0, 0);
             return d;
         }
 
-        function formatDateShort(dateStr) {
-            const d = new Date(dateStr + 'T00:00:00');
-            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }
-
-        function getDayName(dateStr) {
-            const d = new Date(dateStr + 'T00:00:00');
-            return d.toLocaleDateString('en-US', { weekday: 'short' });
-        }
-
         // Load / Save
         function loadData() {
-            const saved = localStorage.getItem('wanderingRule_v1');
+            const saved = localStorage.getItem('wanderingRule_v2');
             if (saved) {
                 try {
                     data = JSON.parse(saved);
                     if (!data.completions) data.completions = {};
+                    if (!data.journals) data.journals = {};
                 } catch (e) {
-                    console.warn('Corrupt data, resetting.');
-                    data = { completions: {}, lastUpdated: null };
+                    data = { completions: {}, journals: {}, lastUpdated: null };
                 }
             } else {
-                // First time - empty but friendly
-                data = { completions: {}, lastUpdated: getToday() };
+                data = { completions: {}, journals: {}, lastUpdated: getToday() };
             }
         }
 
         function saveData() {
             data.lastUpdated = getToday();
-            localStorage.setItem('wanderingRule_v1', JSON.stringify(data));
+            localStorage.setItem('wanderingRule_v2', JSON.stringify(data));
         }
 
-        // Streak calculation - current streak ending today
+        // Streak calculation
         function getCurrentStreak(practiceId) {
             const dates = data.completions[practiceId] || [];
             if (!dates.length) return 0;
@@ -709,13 +761,11 @@
         }
 
         function updateDashboardStats() {
-            // Active practices (those with at least 1 completion)
             const active = Object.keys(data.completions).filter(pid => 
                 (data.completions[pid] || []).length > 0
             ).length;
             document.getElementById('active-practices').textContent = active;
 
-            // Longest current streak across all
             let longest = 0;
             PRACTICES.forEach(p => {
                 const s = getCurrentStreak(p.id);
@@ -723,13 +773,12 @@
             });
             document.getElementById('longest-streak').textContent = longest;
 
-            // This week completions
             const weekStart = getWeekStart(new Date());
             const weekCount = getWeekCompletionsCount(weekStart);
             document.getElementById('week-completions').textContent = weekCount;
         }
 
-        // Render practice cards on dashboard
+        // Render practice cards
         function renderPracticeCards() {
             const grid = document.getElementById('practice-grid');
             grid.innerHTML = '';
@@ -741,7 +790,6 @@
                 const card = document.createElement('div');
                 card.className = `practice-card bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-3xl p-5 flex flex-col h-full cursor-pointer`;
                 card.onclick = (e) => {
-                    // Don't trigger if clicking the button
                     if (!e.target.closest('button')) {
                         showPracticeModal(practice.id);
                     }
@@ -774,7 +822,7 @@
                         
                         <button onclick="event.stopImmediatePropagation(); showPracticeModal('${practice.id}')" 
                                 class="mt-2 w-full text-center text-xs py-1 text-zinc-400 hover:text-zinc-200 transition-colors flex items-center justify-center gap-x-1">
-                            <span>View history &amp; edit</span>
+                            <span>View history &amp; journal</span>
                             <i class="fa-solid fa-chevron-right text-xs"></i>
                         </button>
                     </div>
@@ -786,20 +834,19 @@
         function updateAllStreaksAndUI() {
             renderPracticeCards();
             updateDashboardStats();
+            renderDailyWord();
+            renderGentleInvitation();
             
-            // If weekly track is visible, refresh it
             const trackSection = document.getElementById('weekly-track');
             if (trackSection.classList.contains('active')) {
                 renderWeeklyGrid();
             }
         }
 
-        // Quick check-in
+        // Check-in
         function checkIn(practiceId, buttonEl = null) {
             const todayStr = getToday();
-            if (!data.completions[practiceId]) {
-                data.completions[practiceId] = [];
-            }
+            if (!data.completions[practiceId]) data.completions[practiceId] = [];
             
             const arr = data.completions[practiceId];
             
@@ -812,23 +859,19 @@
             arr.sort();
             saveData();
             
-            // Update UI immediately
             updateAllStreaksAndUI();
             
-            // Gentle random affirmation
             const affirmation = AFFIRMATIONS[Math.floor(Math.random() * AFFIRMATIONS.length)];
             showToast(affirmation, "success");
             
-            // If button passed, update its appearance
             if (buttonEl) {
                 buttonEl.innerHTML = `<i class="fa-solid fa-check mr-1.5"></i> <span>Marked for today — Thank you</span>`;
                 buttonEl.className = buttonEl.className.replace('from-amber-600 to-orange-600', 'bg-emerald-900/60 text-emerald-400 border border-emerald-800');
             }
             
-            // If modal is open for this practice, refresh it
             const modal = document.getElementById('practice-modal');
             if (!modal.classList.contains('hidden') && modal.dataset.currentPractice === practiceId) {
-                showPracticeModal(practiceId); // re-render
+                showPracticeModal(practiceId);
             }
         }
 
@@ -837,20 +880,129 @@
             const pid = modal.dataset.currentPractice;
             if (pid) {
                 checkIn(pid);
-                // Modal will refresh via checkIn -> updateAll
             }
         }
 
-        // Show detailed modal for a practice
-        let currentModalPracticeId = null;
+        // Daily Word on Dashboard
+        function getDailyWord() {
+            // Seed by date for consistency throughout the day
+            const today = getToday();
+            let seed = 0;
+            for (let i = 0; i < today.length; i++) {
+                seed += today.charCodeAt(i);
+            }
+            const index = seed % VERSES.length;
+            return VERSES[index];
+        }
 
+        function renderDailyWord() {
+            const container = document.getElementById('daily-word-content');
+            if (!container) return;
+
+            currentDailyWord = getDailyWord();
+            
+            container.innerHTML = `
+                <div class="mb-1">
+                    <span class="font-semibold text-amber-400">${currentDailyWord.ref}</span>
+                </div>
+                <p class="text-sm text-zinc-300 leading-snug line-clamp-3">"${currentDailyWord.text}"</p>
+                <div class="mt-3 flex gap-x-2">
+                    <button onclick="copyDailyWord()" class="text-xs px-3 py-1 rounded-2xl border border-zinc-700 hover:bg-zinc-800 flex items-center gap-x-1">
+                        <i class="fa-solid fa-copy text-xs"></i> <span>Copy</span>
+                    </button>
+                    <button onclick="goToScriptureSection()" class="text-xs px-3 py-1 rounded-2xl border border-zinc-700 hover:bg-zinc-800 flex items-center gap-x-1">
+                        <span>Browse all</span>
+                    </button>
+                </div>
+            `;
+        }
+
+        function refreshDailyWord() {
+            // Force a new random one
+            const container = document.getElementById('daily-word-content');
+            const randomIndex = Math.floor(Math.random() * VERSES.length);
+            currentDailyWord = VERSES[randomIndex];
+            
+            container.innerHTML = `
+                <div class="mb-1">
+                    <span class="font-semibold text-amber-400">${currentDailyWord.ref}</span>
+                </div>
+                <p class="text-sm text-zinc-300 leading-snug line-clamp-3">"${currentDailyWord.text}"</p>
+                <div class="mt-3 flex gap-x-2">
+                    <button onclick="copyDailyWord()" class="text-xs px-3 py-1 rounded-2xl border border-zinc-700 hover:bg-zinc-800 flex items-center gap-x-1">
+                        <i class="fa-solid fa-copy text-xs"></i> <span>Copy</span>
+                    </button>
+                    <button onclick="goToScriptureSection()" class="text-xs px-3 py-1 rounded-2xl border border-zinc-700 hover:bg-zinc-800 flex items-center gap-x-1">
+                        <span>Browse all</span>
+                    </button>
+                </div>
+            `;
+        }
+
+        function copyDailyWord() {
+            if (!currentDailyWord) return;
+            const text = `${currentDailyWord.ref}\n\n${currentDailyWord.text}`;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Verse copied to clipboard', 'info');
+            });
+        }
+
+        function goToScriptureSection() {
+            showSection('scripture');
+        }
+
+        // Gentle Invitation
+        function renderGentleInvitation() {
+            const container = document.getElementById('gentle-invitation-content');
+            if (!container) return;
+
+            // Pick a random practice for today
+            const randomIndex = Math.floor(Math.random() * PRACTICES.length);
+            const practice = PRACTICES[randomIndex];
+            currentGentlePracticeId = practice.id;
+
+            const suggestions = {
+                'sabbath': 'Even 2–3 hours of true rest counts. Let yourself stop without guilt.',
+                'solitude': 'Just 5–10 minutes of quiet with God is enough today.',
+                'prayer': 'Try short breath prayers: “Jesus, I need You.”',
+                'fasting': 'A simple fast from one thing that drains you.',
+                'scripture': 'One verse read slowly three times. Let it sink in.',
+                'community': 'Text one safe person or join a low-pressure gathering.',
+                'generosity': 'Give what you can — a kind word or small gift counts deeply.',
+                'service': 'One quiet act of love. No spotlight needed.',
+                'witness': 'Your honest story of grace is powerful. Share only what feels right.'
+            };
+
+            const suggestion = suggestions[practice.id] || 'Take one small faithful step today.';
+
+            container.innerHTML = `
+                <div class="flex items-start gap-x-3">
+                    <span class="text-3xl mt-0.5">${practice.emoji}</span>
+                    <div>
+                        <div class="font-medium">${practice.name}</div>
+                        <div class="text-xs text-zinc-400 mt-0.5">${suggestion}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function actOnGentleInvitation() {
+            if (!currentGentlePracticeId) return;
+            checkIn(currentGentlePracticeId);
+            
+            // Refresh invitation after check-in
+            setTimeout(() => {
+                renderGentleInvitation();
+            }, 600);
+        }
+
+        // Practice Modal with Journal
         function showPracticeModal(practiceId) {
             const modal = document.getElementById('practice-modal');
             const headerContent = document.getElementById('modal-header-content');
             const body = document.getElementById('modal-body');
             const checkinBtn = document.getElementById('modal-checkin-btn');
 
-            currentModalPracticeId = practiceId;
             modal.dataset.currentPractice = practiceId;
 
             const practice = PRACTICES.find(p => p.id === practiceId);
@@ -873,7 +1025,9 @@
                 </div>
             `;
 
-            // Body content
+            // Body with journal
+            const todayNote = (data.journals[practiceId] && data.journals[practiceId][getToday()]) || '';
+            
             let html = `
                 <div class="mb-5">
                     <p class="text-sm text-zinc-300">${practice.shortDesc}</p>
@@ -889,10 +1043,23 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Journal Section -->
+                <div class="mb-2">
+                    <div class="text-xs uppercase tracking-widest text-zinc-500 mb-2 flex items-center gap-x-2">
+                        <i class="fa-solid fa-pen"></i>
+                        <span>Reflection for today</span>
+                    </div>
+                    <textarea id="journal-textarea" rows="3" placeholder="What did God show you? How was your heart today?" 
+                              class="w-full bg-zinc-950 border border-zinc-700 focus:border-amber-600 rounded-3xl px-4 py-3 text-sm resize-y">${todayNote}</textarea>
+                    <button onclick="saveJournal('${practiceId}')" class="mt-2 text-xs px-4 py-1.5 rounded-2xl border border-zinc-700 hover:bg-zinc-800">
+                        Save reflection
+                    </button>
+                </div>
             `;
 
-            // 14-day mini calendar / toggles
-            html += `<div class="mb-2"><div class="text-xs uppercase tracking-widest text-zinc-500 mb-2">Last 14 days — tap to toggle</div>`;
+            // 14-day mini calendar
+            html += `<div class="mt-4"><div class="text-xs uppercase tracking-widest text-zinc-500 mb-2">Last 14 days — tap to toggle</div>`;
             html += `<div class="grid grid-cols-7 gap-1.5">`;
 
             const today = new Date(getToday() + 'T00:00:00');
@@ -903,7 +1070,6 @@
                 const isCompleted = completions.includes(dateStr);
                 const dayLabel = d.toLocaleDateString('en-US', { weekday: 'narrow' });
                 const dayNum = d.getDate();
-
                 const isToday = dateStr === getToday();
 
                 html += `
@@ -919,16 +1085,9 @@
             }
             html += `</div></div>`;
 
-            // Gentle note
-            html += `
-                <div class="mt-5 text-[10px] text-center text-zinc-500 px-4">
-                    Missed days are part of the story. Grace covers. You can always begin again.
-                </div>
-            `;
-
             body.innerHTML = html;
 
-            // Update check-in button state
+            // Check-in button state
             if (hasToday) {
                 checkinBtn.innerHTML = `<i class="fa-solid fa-check mr-2"></i> <span>Already marked today</span>`;
                 checkinBtn.disabled = true;
@@ -941,6 +1100,20 @@
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+        }
+
+        function saveJournal(practiceId) {
+            const textarea = document.getElementById('journal-textarea');
+            if (!textarea) return;
+
+            const note = textarea.value.trim();
+            const todayStr = getToday();
+
+            if (!data.journals[practiceId]) data.journals[practiceId] = {};
+            data.journals[practiceId][todayStr] = note;
+
+            saveData();
+            showToast('Reflection saved. Thank you for being honest with God.', 'success');
         }
 
         function toggleDateInModal(practiceId, dateStr, element) {
@@ -963,12 +1136,8 @@
             saveData();
             updateAllStreaksAndUI();
             
-            // Refresh modal header streak numbers
             const modal = document.getElementById('practice-modal');
             if (modal.dataset.currentPractice === practiceId) {
-                // Quick refresh of streak display without full re-render
-                const newStreak = getCurrentStreak(practiceId);
-                // We could update DOM directly but re-calling show is clean for MVP
                 showPracticeModal(practiceId);
             }
         }
@@ -977,129 +1146,69 @@
             const modal = document.getElementById('practice-modal');
             modal.classList.remove('flex');
             modal.classList.add('hidden');
-            currentModalPracticeId = null;
         }
 
-        // Plan My Week generation
-        function generatePlan() {
-            const vibe = document.getElementById('energy-vibe').value;
-            const note = document.getElementById('week-note').value.trim();
-            const resultsDiv = document.getElementById('plan-results');
-            const grid = document.getElementById('plan-suggestions-grid');
-            
-            grid.innerHTML = '';
-            
-            const vibeLabels = {
-                'high-energy': 'High Energy',
-                'balanced': 'Balanced',
-                'low-spoons': 'Low Energy / Spoonie',
-                'recovery': 'Recovery Focus',
-                'grief': 'Heavy Heart',
-                'nd-overwhelm': 'Neurodivergent Overwhelm',
-                'connection': 'Longing for Connection'
-            };
-            
-            let headerNote = '';
-            if (note) {
-                headerNote = `<div class="col-span-full mb-2 px-1"><div class="text-xs bg-zinc-950 border border-zinc-800 rounded-2xl p-3 text-zinc-300">Holding space for you: <em>"${note}"</em></div></div>`;
-            }
-            
-            grid.innerHTML = headerNote;
+        // Journey / Progress Summary Modal
+        function showJourneyModal() {
+            const modal = document.getElementById('journey-modal');
+            const content = document.getElementById('journey-content');
 
-            PRACTICES.forEach(practice => {
-                const suggestion = getSuggestionForPractice(practice.id, vibe);
+            let totalCheckins = 0;
+            let longestOverall = 0;
+            let mostConsistent = { name: '', count: 0 };
+
+            PRACTICES.forEach(p => {
+                const comps = data.completions[p.id] || [];
+                totalCheckins += comps.length;
                 
-                const card = document.createElement('div');
-                card.className = `bg-zinc-950 border border-zinc-800 rounded-3xl p-4 text-sm flex flex-col`;
+                const longest = getLongestStreak(p.id);
+                if (longest > longestOverall) longestOverall = longest;
                 
-                card.innerHTML = `
-                    <div class="flex items-center gap-x-2 mb-2">
-                        <span class="text-2xl">${practice.emoji}</span>
-                        <span class="font-semibold">${practice.name}</span>
-                    </div>
-                    <div class="text-zinc-300 text-[13.5px] leading-snug flex-1">${suggestion}</div>
-                    
-                    <div class="mt-3 pt-3 border-t border-zinc-800 text-[10px] text-emerald-400/70 flex items-center gap-x-1">
-                        <i class="fa-solid fa-seedling"></i>
-                        <span class="uppercase tracking-wider">Gentle invitation</span>
-                    </div>
-                `;
-                grid.appendChild(card);
+                if (comps.length > mostConsistent.count) {
+                    mostConsistent = { name: p.name, count: comps.length };
+                }
             });
-            
-            resultsDiv.classList.remove('hidden');
-            resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            const avgStreak = totalCheckins > 0 ? Math.round(totalCheckins / PRACTICES.length) : 0;
+
+            content.innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center bg-zinc-950 rounded-2xl p-4">
+                        <div>
+                            <div class="text-xs text-zinc-500">Total check-ins</div>
+                            <div class="text-3xl font-semibold">${totalCheckins}</div>
+                        </div>
+                        <i class="fa-solid fa-calendar-check text-3xl text-emerald-500/70"></i>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-zinc-950 rounded-2xl p-4">
+                            <div class="text-xs text-zinc-500">Longest streak ever</div>
+                            <div class="text-2xl font-semibold text-amber-400">${longestOverall} days</div>
+                        </div>
+                        <div class="bg-zinc-950 rounded-2xl p-4">
+                            <div class="text-xs text-zinc-500">Most consistent</div>
+                            <div class="text-lg font-medium">${mostConsistent.name}</div>
+                            <div class="text-xs text-emerald-400">${mostConsistent.count} days</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-zinc-950 rounded-2xl p-4 text-center">
+                        <div class="text-xs text-zinc-500 mb-1">A word for your journey</div>
+                        <div class="text-emerald-300 italic">"The Lord is near to all who call on him."</div>
+                        <div class="text-[10px] text-zinc-500 mt-1">— Psalm 145:18</div>
+                    </div>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
         }
 
-        function getSuggestionForPractice(practiceId, vibe) {
-            const base = {
-                'sabbath': 'Set aside intentional time this week to truly rest — no agenda, no productivity. Let your soul breathe.',
-                'solitude': 'Carve out 10–20 minutes of quiet. No phone, no input. Just you and God. Start small if needed.',
-                'prayer': 'Practice short, honest prayers throughout the day. Whisper “Lord, have mercy” or simply sit in silence.',
-                'fasting': 'Consider a simple fast from one meal, social media, or a comfort. Use the hunger as a prompt to pray.',
-                'scripture': 'Read slowly. One chapter or even a few verses. Ask: “Jesus, what are You saying to me today?”',
-                'community': 'Reach out to one person this week — text, call, or share a meal. Or join a small gathering.',
-                'generosity': 'Give something freely this week without expectation. Time, a kind word, money, or help.',
-                'service': 'Look for one quiet way to serve someone — no spotlight needed. Let love be your motive.',
-                'witness': 'Share a small piece of your story or hope with someone this week, or simply live visibly as someone loved by God.'
-            };
-            
-            const lowEnergyMods = {
-                'sabbath': 'Try a “micro-Sabbath” — even 2–3 hours of true rest. It counts. Let yourself stop without guilt.',
-                'solitude': 'Sit in silence for just 5 minutes. That’s enough. God meets you in the small.',
-                'prayer': 'Use breath prayers or short cries: “Jesus, I need You.” The Spirit intercedes when words fail.',
-                'fasting': 'A gentle fast from one thing that drains you (scrolling, noise). No heroic measures required.',
-                'scripture': 'One verse. Read it slowly three times. Let it sink in. No pressure to finish a plan.',
-                'community': 'Text one safe person “thinking of you” or join a low-pressure online space. Connection in small doses.',
-                'generosity': 'Give what you can — even a prayer or encouraging word counts deeply.',
-                'service': 'Serve in a way that doesn’t overwhelm. A small act of kindness is Kingdom work.',
-                'witness': 'Your honest story of struggle + grace is powerful. Share only what feels safe and true.'
-            };
-            
-            const griefMods = {
-                'sabbath': 'Rest may feel impossible. Give yourself permission to lament as part of rest. God holds your tears.',
-                'solitude': 'Solitude can be tender. Bring your grief honestly to God. He is near to the brokenhearted.',
-                'prayer': 'It’s okay if prayer is mostly tears or silence right now. “Lord, I hurt” is enough.',
-                'fasting': 'Fasting from food may be too much. Consider fasting from noise or hurry instead.',
-                'scripture': 'Let the Psalms hold you. Many were written in lament. You don’t have to be “strong.”',
-                'community': 'You don’t have to show up perfectly. A quiet presence or short text is still community.',
-                'generosity': 'Generosity can be receiving right now too. Let others care for you without shame.',
-                'service': 'Serving may need to wait. Your presence and honesty are gifts enough.',
-                'witness': 'Your story of walking through pain with Jesus is a testimony. Share only when ready.'
-            };
-            
-            const ndOverwhelmMods = {
-                'sabbath': 'Make Sabbath low-stimulation. Choose one restorative activity that actually recharges you.',
-                'solitude': 'If silence is hard, try “parallel play” with God — sit with a calm activity and gentle awareness of Him.',
-                'prayer': 'Use written prayers, apps with guided prayers, or repetitive short phrases that ground you.',
-                'fasting': 'Avoid anything that triggers executive dysfunction. A simple boundary (no phone before noon) may be better.',
-                'scripture': 'Audio Bible or short devotional readings. Visual or tactile engagement (journaling, art) can help.',
-                'community': 'Online or asynchronous connection may be easier. One trusted person is plenty.',
-                'generosity': 'Give in ways that don’t require decision fatigue — scheduled giving or simple recurring gifts.',
-                'service': 'Serve in your strength zone. Use your unique wiring rather than forcing typical expressions.',
-                'witness': 'Your authenticity and boundaries are a witness. People are drawn to real, not perfect.'
-            };
-            
-            let suggestion = base[practiceId];
-            
-            if (vibe === 'low-spoons' || vibe === 'recovery') {
-                suggestion = lowEnergyMods[practiceId] || suggestion;
-            } else if (vibe === 'grief') {
-                suggestion = griefMods[practiceId] || suggestion;
-            } else if (vibe === 'nd-overwhelm') {
-                suggestion = ndOverwhelmMods[practiceId] || suggestion;
-            } else if (vibe === 'high-energy') {
-                // Slightly more expansive
-                if (practiceId === 'sabbath') suggestion = 'Enjoy a full, joyful Sabbath — worship, nature, good food, play, and deep rest. Celebrate the gift of this rhythm.';
-                if (practiceId === 'community') suggestion = 'Lean into community this week — host, attend, or serve in a group. Let fellowship strengthen you.';
-            }
-            
-            return suggestion;
-        }
-
-        function clearPlanResults() {
-            document.getElementById('plan-results').classList.add('hidden');
-            document.getElementById('plan-suggestions-grid').innerHTML = '';
+        function closeJourneyModal() {
+            const modal = document.getElementById('journey-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
         }
 
         // Weekly Grid
@@ -1116,7 +1225,6 @@
             const table = document.getElementById('weekly-grid-table');
             table.innerHTML = '';
 
-            // Header row
             let theadHTML = `<thead><tr class="text-xs text-zinc-400">
                 <th class="sticky left-0 bg-zinc-900 z-10 text-left px-3 py-2 rounded-tl-2xl">Practice</th>`;
             
@@ -1138,7 +1246,6 @@
             theadHTML += `</tr></thead>`;
             table.innerHTML = theadHTML;
 
-            // Body
             let tbodyHTML = `<tbody>`;
             
             PRACTICES.forEach(practice => {
@@ -1172,9 +1279,6 @@
             
             tbodyHTML += `</tbody>`;
             table.innerHTML += tbodyHTML;
-
-            // Update week label in header area if needed (we can add one)
-            // For now the nav buttons handle context
         }
 
         function toggleWeeklyCell(practiceId, dateStr, cellElement) {
@@ -1219,7 +1323,6 @@
         // Scripture functions
         function renderVerseFilterOptions() {
             const select = document.getElementById('verse-filter-practice');
-            // Already has "All practices", add others
             PRACTICES.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p.id;
@@ -1303,15 +1406,12 @@
                 </div>
             `;
             
-            // Hide the normal check-in button or repurpose
             const checkinBtn = document.getElementById('modal-checkin-btn');
             checkinBtn.style.display = 'none';
             
-            // Add a close + copy row at bottom? But since we have the footer buttons already, just show modal
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             
-            // Override close to restore button
             const originalClose = closeModal;
             window.closeModal = function() {
                 checkinBtn.style.display = '';
@@ -1324,16 +1424,14 @@
             const randomIndex = Math.floor(Math.random() * VERSES.length);
             const verse = VERSES[randomIndex];
             
-            // Show featured
             const featured = document.getElementById('featured-verse');
             document.getElementById('featured-ref').innerHTML = verse.ref;
             document.getElementById('featured-text').innerHTML = `"${verse.text}"`;
             featured.classList.remove('hidden');
             featured.scrollIntoView({ behavior: 'smooth', block: 'center' });
             
-            // Also highlight in grid if visible
             setTimeout(() => {
-                filterVerses(); // refresh grid
+                filterVerses();
             }, 1200);
         }
 
@@ -1343,23 +1441,99 @@
             const full = `${ref}\n\n${text}`;
             
             navigator.clipboard.writeText(full).then(() => {
-                const origText = event.currentTarget ? event.currentTarget.innerHTML : '';
                 showToast('Verse copied to clipboard', 'info');
             }).catch(() => {
-                // Fallback
                 prompt('Copy this verse:', full);
             });
         }
 
-        function filterVersesFromPractice(practiceId) {
-            document.getElementById('verse-filter-practice').value = practiceId;
-            showSection('scripture');
-            setTimeout(() => {
-                filterVerses();
-            }, 50);
+        // Plan My Week
+        function generatePlan() {
+            const vibe = document.getElementById('energy-vibe').value;
+            const note = document.getElementById('week-note').value.trim();
+            const resultsDiv = document.getElementById('plan-results');
+            const grid = document.getElementById('plan-suggestions-grid');
+            
+            grid.innerHTML = '';
+            
+            let headerNote = '';
+            if (note) {
+                headerNote = `<div class="col-span-full mb-2 px-1"><div class="text-xs bg-zinc-950 border border-zinc-800 rounded-2xl p-3 text-zinc-300">Holding space for you: <em>"${note}"</em></div></div>`;
+            }
+            
+            grid.innerHTML = headerNote;
+
+            PRACTICES.forEach(practice => {
+                const suggestion = getSuggestionForPractice(practice.id, vibe);
+                
+                const card = document.createElement('div');
+                card.className = `bg-zinc-950 border border-zinc-800 rounded-3xl p-4 text-sm flex flex-col`;
+                
+                card.innerHTML = `
+                    <div class="flex items-center gap-x-2 mb-2">
+                        <span class="text-2xl">${practice.emoji}</span>
+                        <span class="font-semibold">${practice.name}</span>
+                    </div>
+                    <div class="text-zinc-300 text-[13.5px] leading-snug flex-1">${suggestion}</div>
+                    
+                    <div class="mt-3 pt-3 border-t border-zinc-800 text-[10px] text-emerald-400/70 flex items-center gap-x-1">
+                        <i class="fa-solid fa-seedling"></i>
+                        <span class="uppercase tracking-wider">Gentle invitation</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            
+            resultsDiv.classList.remove('hidden');
+            resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
-        // Toast system (gentle, non-intrusive)
+        function getSuggestionForPractice(practiceId, vibe) {
+            const base = {
+                'sabbath': 'Set aside intentional time this week to truly rest — no agenda, no productivity. Let your soul breathe.',
+                'solitude': 'Carve out 10–20 minutes of quiet. No phone, no input. Just you and God. Start small if needed.',
+                'prayer': 'Practice short, honest prayers throughout the day. Whisper “Lord, have mercy” or simply sit in silence.',
+                'fasting': 'Consider a simple fast from one meal, social media, or a comfort. Use the hunger as a prompt to pray.',
+                'scripture': 'Read slowly. One chapter or even a few verses. Ask: “Jesus, what are You saying to me today?”',
+                'community': 'Reach out to one person this week — text, call, or share a meal. Or join a small gathering.',
+                'generosity': 'Give something freely this week without expectation. Time, a kind word, money, or help.',
+                'service': 'Look for one quiet way to serve someone — no spotlight needed. Let love be your motive.',
+                'witness': 'Share a small piece of your story or hope with someone this week, or simply live visibly as someone loved by God.'
+            };
+            
+            const lowEnergyMods = {
+                'sabbath': 'Try a “micro-Sabbath” — even 2–3 hours of true rest. It counts. Let yourself stop without guilt.',
+                'solitude': 'Sit in silence for just 5 minutes. That’s enough. God meets you in the small.',
+                'prayer': 'Use breath prayers or short cries: “Jesus, I need You.” The Spirit intercedes when words fail.',
+                'fasting': 'A gentle fast from one thing that drains you (scrolling, noise). No heroic measures required.',
+                'scripture': 'One verse. Read it slowly three times. Let it sink in. No pressure to finish a plan.',
+                'community': 'Text one safe person “thinking of you” or join a low-pressure online space. Connection in small doses.',
+                'generosity': 'Give what you can — even a prayer or encouraging word counts deeply.',
+                'service': 'Serve in a way that doesn’t overwhelm. A small act of kindness is Kingdom work.',
+                'witness': 'Your honest story of struggle + grace is powerful. Share only what feels safe and true.'
+            };
+            
+            let suggestion = base[practiceId];
+            
+            if (vibe === 'low-spoons' || vibe === 'recovery') {
+                suggestion = lowEnergyMods[practiceId] || suggestion;
+            } else if (vibe === 'grief') {
+                // Simplified grief mods
+                if (practiceId === 'sabbath') suggestion = 'Rest may feel impossible. Give yourself permission to lament as part of rest. God holds your tears.';
+                if (practiceId === 'prayer') suggestion = 'It’s okay if prayer is mostly tears or silence right now. “Lord, I hurt” is enough.';
+            } else if (vibe === 'nd-overwhelm') {
+                if (practiceId === 'solitude') suggestion = 'If silence is hard, try “parallel play” with God — sit with a calm activity and gentle awareness of Him.';
+            }
+            
+            return suggestion;
+        }
+
+        function clearPlanResults() {
+            document.getElementById('plan-results').classList.add('hidden');
+            document.getElementById('plan-suggestions-grid').innerHTML = '';
+        }
+
+        // Toast
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             
@@ -1388,9 +1562,10 @@
         // Export / Import
         function exportData() {
             const exportObj = {
-                version: "1.0",
+                version: "2.0",
                 exportedAt: new Date().toISOString(),
                 completions: data.completions,
+                journals: data.journals,
                 note: "Wandering Rule backup — import this file to restore your progress."
             };
             
@@ -1418,11 +1593,11 @@
                     if (imported.completions && typeof imported.completions === 'object') {
                         if (confirm('Replace your current progress with the imported data? This cannot be undone.')) {
                             data.completions = imported.completions;
+                            if (imported.journals) data.journals = imported.journals;
                             saveData();
                             updateAllStreaksAndUI();
                             showToast('Data imported successfully. Welcome back.', 'success');
                             
-                            // Refresh current view
                             const activeSection = document.querySelector('.section.active');
                             if (activeSection && activeSection.id === 'weekly-track') {
                                 renderWeeklyGrid();
@@ -1436,10 +1611,9 @@
                 }
             };
             reader.readAsText(file);
-            event.target.value = ''; // reset input
+            event.target.value = '';
         }
 
-        // Utility: Mark everything today (for demo / encouragement)
         function markAllToday() {
             if (!confirm('Mark all 9 practices as done for today? This is a big grace-filled step.')) return;
             
@@ -1462,6 +1636,7 @@
             if (!confirm('Last chance — this cannot be recovered. Proceed?')) return;
             
             data.completions = {};
+            data.journals = {};
             saveData();
             updateAllStreaksAndUI();
             showToast('Data cleared. Fresh start with new mercies.', 'info');
@@ -1469,19 +1644,15 @@
 
         // Section navigation
         function showSection(sectionId) {
-            // Hide all
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             
-            // Show target
             const target = document.getElementById(sectionId);
             target.classList.add('active');
             
-            // Update nav active states
             document.querySelectorAll('[id^="nav-"]').forEach(nav => nav.classList.remove('active'));
             const navBtn = document.getElementById('nav-' + sectionId);
             if (navBtn) navBtn.classList.add('active');
             
-            // Special inits
             if (sectionId === 'weekly-track' && currentWeekStart) {
                 renderWeeklyGrid(currentWeekStart);
             } else if (sectionId === 'weekly-track') {
@@ -1490,20 +1661,17 @@
             }
             
             if (sectionId === 'scripture') {
-                // Ensure verses are rendered
                 const grid = document.getElementById('verse-grid');
                 if (grid.children.length === 0) {
                     filterVerses();
                 }
             }
             
-            // Close mobile nav if open
             const mobileNav = document.getElementById('mobile-nav');
             if (mobileNav) mobileNav.remove();
         }
 
         function showMobileNav() {
-            // Simple mobile sheet
             const existing = document.getElementById('mobile-nav');
             if (existing) existing.remove();
             
@@ -1544,7 +1712,7 @@
             document.body.appendChild(sheet);
         }
 
-        // Keyboard shortcuts (accessibility + power users)
+        // Keyboard shortcuts
         function setupKeyboardShortcuts() {
             document.addEventListener('keydown', function(e) {
                 if (e.metaKey && e.key === '/') {
@@ -1561,97 +1729,44 @@
                     showSection('plan-week');
                 }
                 
-                // Escape closes modal
                 if (e.key === 'Escape') {
                     const modal = document.getElementById('practice-modal');
                     if (!modal.classList.contains('hidden')) {
                         closeModal();
+                    } else {
+                        const journey = document.getElementById('journey-modal');
+                        if (!journey.classList.contains('hidden')) closeJourneyModal();
                     }
                 }
             });
-            
-            // Add hint in console for devs
-            console.log('%c[Wandering Rule] Keyboard: Cmd/Ctrl + / = focus scripture search • ? = open Plan My Week • Esc = close modal', 'color:#52525b');
         }
 
-        // Initialize everything
+        // Initialize
         function initializeApp() {
             initTailwind();
             loadData();
             
-            // Set today's date in header
             const todayEl = document.getElementById('today-date');
             const d = new Date();
             todayEl.textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
             
-            // Render dashboard
             renderPracticeCards();
             updateDashboardStats();
+            renderDailyWord();
+            renderGentleInvitation();
             
-            // Scripture setup
             renderVerseFilterOptions();
-            filterVerses(); // initial render of all verses
+            filterVerses();
             
-            // Set initial week for track (but don't render until visited)
             currentWeekStart = getWeekStart(new Date());
             
-            // Keyboard niceties
             setupKeyboardShortcuts();
             
-            // Gentle first-time message
-            if (Object.keys(data.completions).length === 0) {
-                setTimeout(() => {
-                    const grid = document.getElementById('practice-grid');
-                    if (grid) {
-                        // Already empty state friendly via the cards
-                    }
-                }, 800);
-            }
-            
-            // PWA install prompt handling (basic)
-            let deferredPrompt;
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-                // Could show a custom install banner here if desired
-                console.log('%c[Wandering Rule] App is installable as PWA', 'color:#3f3f46');
-            });
-            
-            // Show a very gentle welcome toast on first load (only once)
-            const hasSeenWelcome = localStorage.getItem('wanderingRule_welcomeShown');
-            if (!hasSeenWelcome && Object.keys(data.completions).length === 0) {
-                setTimeout(() => {
-                    showToast('Welcome. Take a deep breath. This space is full of grace for you.', 'info');
-                    localStorage.setItem('wanderingRule_welcomeShown', 'true');
-                }, 2200);
-            }
-            
-            // Make sure dashboard is visible
             document.getElementById('dashboard').classList.add('active');
             
-            // Bonus: Preload a tiny bit of demo data if completely empty (comment out for production if desired)
-            // For better first impression, seed 3-4 days on 2 practices
-            if (Object.keys(data.completions).length === 0) {
-                // Uncomment the next block if you want demo data on first load
-                /*
-                const demoToday = getToday();
-                const d1 = new Date(); d1.setDate(d1.getDate()-1);
-                const d2 = new Date(); d2.setDate(d2.getDate()-2);
-                const ds = [demoToday, d1.toISOString().split('T')[0], d2.toISOString().split('T')[0]];
-                
-                data.completions['prayer'] = [...ds];
-                data.completions['scripture'] = [demoToday, d1.toISOString().split('T')[0]];
-                data.completions['solitude'] = [demoToday];
-                saveData();
-                renderPracticeCards();
-                updateDashboardStats();
-                */
-            }
-            
-            console.log('%c[Wandering Rule] Initialized successfully. All data in localStorage. Fully offline capable after first load.', 'color:#166534');
+            console.log('%c[Wandering Rule v2] Initialized with Daily Word, Gentle Invitation, Journal & Journey features.', 'color:#166534');
         }
 
-        // Boot the app
         window.onload = initializeApp;
     </script>
 </body>
