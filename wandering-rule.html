@@ -1,0 +1,1773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#18181b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="Wandering Rule — A gentle, grace-filled Rule of Life tracker for the 9 practices from Practicing the Way. Built with hope by SamaKaze.">
+    <title>Wandering Rule • SamaKaze Rule of Life</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Playfair+Display:wght@700&amp;display=swap');
+        
+        :root {
+            --accent: #d97706;
+        }
+        
+        body {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        
+        .heading-serif {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+
+        .dark {
+            color-scheme: dark;
+        }
+
+        .practice-card {
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+                        box-shadow 0.2s cubic-bezier(0.4, 0.0, 0.2, 1),
+                        border-color 0.2s ease;
+        }
+        
+        .practice-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        .section {
+            display: none;
+        }
+        
+        .section.active {
+            display: block;
+        }
+
+        .nav-link {
+            transition: all 0.1s ease;
+        }
+        
+        .nav-link.active {
+            color: #d97706;
+            border-bottom: 2px solid #d97706;
+        }
+
+        .streak-number {
+            font-variant-numeric: tabular-nums;
+            transition: color 0.3s ease;
+        }
+
+        .habit-day {
+            transition: all 0.15s cubic-bezier(0.4, 0.0, 0.2, 1);
+            user-select: none;
+        }
+        
+        .habit-day.completed {
+            background-color: #166534;
+            border-color: #4ade80;
+            color: #bbf7d0;
+        }
+        
+        .habit-day:hover {
+            transform: scale(1.05);
+        }
+
+        .verse-card {
+            transition: all 0.2s ease;
+        }
+
+        .verse-card:hover {
+            border-color: #854d0e;
+        }
+
+        .gentle-toast {
+            animation: gentle-pop-in 0.3s ease forwards;
+        }
+
+        @keyframes gentle-pop-in {
+            from { opacity: 0; transform: translateY(10px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .rule-container {
+            max-width: 1280px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .mini-calendar {
+            scrollbar-width: thin;
+            scrollbar-color: #3f3f46 #18181b;
+        }
+
+        table.weekly-grid {
+            border-collapse: separate;
+            border-spacing: 4px;
+        }
+        
+        .weekly-grid th, .weekly-grid td {
+            padding: 6px 4px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        
+        .weekly-grid .practice-name {
+            text-align: left;
+            padding-left: 12px;
+            font-weight: 500;
+        }
+
+        .focus-ring {
+            transition: box-shadow 0.1s ease;
+        }
+        
+        .focus-ring:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.5);
+        }
+
+        .faith-accent {
+            color: #d97706;
+        }
+
+        .metric {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .empty-state {
+            background: linear-gradient(145deg, #18181b 0%, #27251f 100%);
+        }
+
+        .modal {
+            animation: modal-enter 0.2s ease forwards;
+        }
+
+        @keyframes modal-enter {
+            from { opacity: 0; transform: translateY(20px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .subtle-grid {
+            background-image: 
+                linear-gradient(rgba(63, 63, 70, 0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(63, 63, 70, 0.08) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        .dashboard-card {
+            transition: all 0.2s ease;
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-200 dark">
+    <!-- Header / Navigation -->
+    <header class="sticky top-0 z-50 bg-zinc-950/95 backdrop-blur-lg border-b border-zinc-800">
+        <div class="max-w-screen-2xl mx-auto">
+            <div class="px-6 py-4 flex items-center justify-between">
+                <!-- Logo -->
+                <div class="flex items-center gap-x-3">
+                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-600 to-orange-700 flex items-center justify-center shadow-inner">
+                        <span class="text-3xl">🦊</span>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-semibold tracking-tighter heading-serif">Wandering Rule</h1>
+                        <p class="text-[10px] text-zinc-500 -mt-1">SamaKaze Rule of Life</p>
+                    </div>
+                </div>
+
+                <!-- Nav -->
+                <nav class="hidden md:flex items-center gap-x-1 text-sm">
+                    <button onclick="showSection('dashboard')" 
+                            class="nav-link active px-4 py-2 rounded-2xl hover:bg-zinc-900 flex items-center gap-x-2" id="nav-dashboard">
+                        <i class="fa-solid fa-home w-4"></i>
+                        <span>Dashboard</span>
+                    </button>
+                    <button onclick="showSection('plan-week')" 
+                            class="nav-link px-4 py-2 rounded-2xl hover:bg-zinc-900 flex items-center gap-x-2" id="nav-plan">
+                        <i class="fa-solid fa-calendar-week w-4"></i>
+                        <span>Plan My Week</span>
+                    </button>
+                    <button onclick="showSection('weekly-track')" 
+                            class="nav-link px-4 py-2 rounded-2xl hover:bg-zinc-900 flex items-center gap-x-2" id="nav-track">
+                        <i class="fa-solid fa-table w-4"></i>
+                        <span>Weekly Track</span>
+                    </button>
+                    <button onclick="showSection('scripture')" 
+                            class="nav-link px-4 py-2 rounded-2xl hover:bg-zinc-900 flex items-center gap-x-2" id="nav-scripture">
+                        <i class="fa-solid fa-book-open w-4"></i>
+                        <span>Scripture</span>
+                    </button>
+                </nav>
+
+                <!-- Right side actions -->
+                <div class="flex items-center gap-x-2">
+                    <!-- Today indicator -->
+                    <div class="hidden sm:flex items-center gap-x-2 px-3 py-1.5 bg-zinc-900 rounded-3xl text-xs border border-zinc-800">
+                        <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                        <span id="today-date" class="font-mono text-zinc-400"></span>
+                    </div>
+
+                    <!-- Data actions -->
+                    <div class="flex items-center gap-x-1.5">
+                        <button onclick="exportData()" 
+                                class="px-3 py-2 text-xs flex items-center gap-x-2 rounded-2xl border border-zinc-700 hover:bg-zinc-900 hover:border-zinc-600 transition-colors"
+                                title="Export your progress as JSON">
+                            <i class="fa-solid fa-download text-xs"></i>
+                            <span class="hidden md:inline text-xs">Export</span>
+                        </button>
+                        
+                        <label class="cursor-pointer px-3 py-2 text-xs flex items-center gap-x-2 rounded-2xl border border-zinc-700 hover:bg-zinc-900 hover:border-zinc-600 transition-colors"
+                               title="Import progress from JSON backup">
+                            <i class="fa-solid fa-upload text-xs"></i>
+                            <span class="hidden md:inline text-xs">Import</span>
+                            <input type="file" id="import-file" accept=".json" class="hidden" onchange="importData(event)">
+                        </label>
+                    </div>
+
+                    <!-- Mobile nav -->
+                    <div class="md:hidden">
+                        <button onclick="showMobileNav()" class="p-3 text-zinc-400 hover:text-zinc-200">
+                            <i class="fa-solid fa-bars text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-screen-2xl mx-auto px-5 pb-12">
+        
+        <!-- DASHBOARD -->
+        <section id="dashboard" class="section active pt-8">
+            <div class="max-w-7xl mx-auto">
+                <!-- Welcome Header -->
+                <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-y-3 mb-8">
+                    <div>
+                        <div class="flex items-center gap-x-3">
+                            <h2 class="text-4xl tracking-tighter font-semibold heading-serif">Welcome back, wanderer.</h2>
+                        </div>
+                        <p class="text-zinc-400 mt-1.5 max-w-md">One faithful step at a time. Grace meets you exactly where you are.</p>
+                    </div>
+                    <div class="flex items-center gap-x-3">
+                        <button onclick="markAllToday()" 
+                                class="px-5 py-2.5 text-sm rounded-3xl border border-zinc-700 hover:bg-zinc-900 flex items-center gap-x-2 transition-colors">
+                            <i class="fa-solid fa-check-double"></i>
+                            <span>Mark all today</span>
+                        </button>
+                        <button onclick="resetAllStreaks()" 
+                                class="px-4 py-2.5 text-sm rounded-3xl text-zinc-400 hover:text-red-400 hover:bg-zinc-900 flex items-center gap-x-2 transition-colors text-xs">
+                            <i class="fa-solid fa-undo"></i>
+                            <span class="hidden sm:inline">Reset data</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-3xl px-5 py-4">
+                        <div class="text-xs uppercase tracking-[1.5px] text-zinc-500">Active Practices</div>
+                        <div class="flex items-baseline gap-x-2 mt-1">
+                            <span id="active-practices" class="text-4xl font-semibold metric">0</span>
+                            <span class="text-emerald-400 text-sm">/ 9</span>
+                        </div>
+                    </div>
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-3xl px-5 py-4">
+                        <div class="text-xs uppercase tracking-[1.5px] text-zinc-500">Longest Current Streak</div>
+                        <div class="flex items-baseline gap-x-2 mt-1">
+                            <span id="longest-streak" class="text-4xl font-semibold metric text-amber-400">0</span>
+                            <span class="text-xs text-zinc-500">days</span>
+                        </div>
+                    </div>
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-3xl px-5 py-4">
+                        <div class="text-xs uppercase tracking-[1.5px] text-zinc-500">This Week</div>
+                        <div class="flex items-baseline gap-x-2 mt-1">
+                            <span id="week-completions" class="text-4xl font-semibold metric">0</span>
+                            <span class="text-xs text-zinc-500">check-ins</span>
+                        </div>
+                    </div>
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-3xl px-5 py-4 flex flex-col justify-center cursor-pointer" onclick="showJourneyModal()">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="text-xs uppercase tracking-[1.5px] text-zinc-500">My Journey</div>
+                                <div class="text-sm text-amber-400">View progress &amp; insights →</div>
+                            </div>
+                            <i class="fa-solid fa-chart-line text-xl text-amber-600/70"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Daily Word + Gentle Invitation Row -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+                    
+                    <!-- Daily Word -->
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 dashboard-card">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-x-2">
+                                <i class="fa-solid fa-book text-amber-500"></i>
+                                <span class="font-semibold">Word for Today</span>
+                            </div>
+                            <button onclick="refreshDailyWord()" class="text-xs px-3 py-1 rounded-2xl border border-zinc-700 hover:bg-zinc-800 flex items-center gap-x-1">
+                                <i class="fa-solid fa-sync text-xs"></i>
+                                <span>New Word</span>
+                            </button>
+                        </div>
+                        <div id="daily-word-content">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Today's Gentle Invitation -->
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 dashboard-card">
+                        <div class="flex items-center gap-x-2 mb-3">
+                            <i class="fa-solid fa-seedling text-emerald-500"></i>
+                            <span class="font-semibold">Today’s Gentle Invitation</span>
+                        </div>
+                        <div id="gentle-invitation-content" class="text-sm text-zinc-300 min-h-[60px]">
+                            <!-- Populated by JS -->
+                        </div>
+                        <button onclick="actOnGentleInvitation()" 
+                                class="mt-4 w-full py-2.5 text-sm rounded-2xl bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center gap-x-2 text-white">
+                            <span>Mark this practice done</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Practice Cards Grid -->
+                <div class="mb-4 flex items-center justify-between">
+                    <h3 class="font-semibold text-lg tracking-tight">Your 9 Practices</h3>
+                    <div class="text-xs px-3 py-1 bg-zinc-900 rounded-2xl border border-zinc-800 text-zinc-400 flex items-center gap-x-1.5">
+                        <i class="fa-solid fa-info-circle"></i>
+                        <span>Tap a card to see history &amp; journal</span>
+                    </div>
+                </div>
+
+                <div id="practice-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                    <!-- Populated by JS -->
+                </div>
+
+                <div class="mt-8 text-center">
+                    <p class="text-xs text-zinc-500 max-w-xs mx-auto">No guilt. No scorekeeping. Only invitation. The Lord is gentle with His children.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- PLAN MY WEEK -->
+        <section id="plan-week" class="section pt-8 max-w-4xl mx-auto">
+            <div class="mb-8">
+                <h2 class="text-3xl tracking-tighter font-semibold heading-serif">Plan My Week</h2>
+                <p class="text-zinc-400 mt-2">Tell the app how you're feeling. Receive gentle, personalized invitations for each practice — adapted to your energy, season, and capacity.</p>
+            </div>
+
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-7">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+                    <!-- Input Column -->
+                    <div class="md:col-span-2 space-y-5">
+                        <div>
+                            <label class="block text-xs font-medium tracking-widest text-zinc-400 mb-1.5">HOW IS YOUR ENERGY THIS WEEK?</label>
+                            <select id="energy-vibe" class="w-full bg-zinc-950 border border-zinc-700 focus:border-amber-600 rounded-2xl px-4 py-3 text-sm focus:outline-none">
+                                <option value="high-energy">High Energy — Ready to engage fully</option>
+                                <option value="balanced">Balanced &amp; Steady</option>
+                                <option value="low-spoons" selected>Low Energy / Spoonie — Gentle is best</option>
+                                <option value="recovery">Recovery Focus — Healing &amp; rebuilding</option>
+                                <option value="grief">Heavy Heart / Grief — Need space to lament</option>
+                                <option value="nd-overwhelm">Neurodivergent Overwhelm — Low demand, high grace</option>
+                                <option value="connection">Longing for Connection</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium tracking-widest text-zinc-400 mb-1.5">ANYTHING ON YOUR HEART? (OPTIONAL)</label>
+                            <textarea id="week-note" rows="3" placeholder="Mom's health is heavy this week... or I'm celebrating a small victory..."
+                                      class="w-full bg-zinc-950 border border-zinc-700 focus:border-amber-600 rounded-3xl px-4 py-3 text-sm resize-y min-h-[92px] focus:outline-none"></textarea>
+                        </div>
+
+                        <button onclick="generatePlan()" 
+                                class="w-full py-3.5 rounded-3xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 active:brightness-95 transition-all text-white font-medium flex items-center justify-center gap-x-2 shadow-lg shadow-amber-950/50">
+                            <i class="fa-solid fa-magic"></i>
+                            <span>Generate My Gentle Plan</span>
+                        </button>
+                    </div>
+
+                    <!-- Preview / Info -->
+                    <div class="md:col-span-3 bg-zinc-950 border border-zinc-800 rounded-3xl p-6 text-sm">
+                        <div class="flex gap-x-3">
+                            <i class="fa-solid fa-lightbulb text-amber-500 mt-0.5"></i>
+                            <div class="text-xs leading-relaxed text-zinc-400">
+                                This plan meets you with compassion. Suggestions are invitations, not commands. 
+                                If something feels too much, the Holy Spirit is your perfect Guide. 
+                                You can always adapt or rest.
+                            </div>
+                        </div>
+                        
+                        <div class="mt-5 pt-5 border-t border-zinc-800 text-[10px] text-zinc-500">
+                            Inspired by John Mark Comer’s <em>Practicing the Way</em> — adapted for real life, neurodivergence, recovery, and chronic seasons.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Generated Plan Results -->
+                <div id="plan-results" class="hidden mt-8 pt-8 border-t border-zinc-800">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="font-semibold flex items-center gap-x-2">
+                            <span>Your Personalized Invitations</span>
+                        </h4>
+                        <button onclick="clearPlanResults()" class="text-xs px-3 py-1 rounded-2xl border border-zinc-700 hover:bg-zinc-900">Clear</button>
+                    </div>
+                    
+                    <div id="plan-suggestions-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Populated dynamically -->
+                    </div>
+                    
+                    <div class="mt-6 text-center">
+                        <p class="text-xs text-emerald-400/80">“The Lord is near to all who call on him, to all who call on him in truth.” — Psalm 145:18</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- WEEKLY TRACK -->
+        <section id="weekly-track" class="section pt-8 max-w-[1100px] mx-auto">
+            <div class="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-y-3">
+                <div>
+                    <h2 class="text-3xl tracking-tighter font-semibold heading-serif">Weekly Track</h2>
+                    <p class="text-sm text-zinc-400">See the rhythm of your week at a glance. Click any cell to toggle.</p>
+                </div>
+                
+                <div class="flex items-center gap-x-2">
+                    <button onclick="prevWeek()" class="px-4 py-2 rounded-2xl border border-zinc-700 hover:bg-zinc-900 flex items-center gap-x-2 text-sm">
+                        <i class="fa-solid fa-chevron-left"></i> <span>Prev</span>
+                    </button>
+                    <button onclick="goToCurrentWeek()" class="px-4 py-2 rounded-2xl bg-zinc-900 border border-zinc-700 hover:bg-zinc-800 text-sm flex items-center gap-x-2">
+                        <i class="fa-solid fa-calendar-day"></i> <span>This Week</span>
+                    </button>
+                    <button onclick="nextWeek()" class="px-4 py-2 rounded-2xl border border-zinc-700 hover:bg-zinc-900 flex items-center gap-x-2 text-sm">
+                        <span>Next</span> <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-2 overflow-x-auto">
+                <table id="weekly-grid-table" class="weekly-grid w-full min-w-[720px] text-sm">
+                    <!-- Populated by JS -->
+                </table>
+            </div>
+            
+            <div class="mt-4 flex justify-between items-center text-xs px-1">
+                <div class="text-zinc-500">Click any square to mark or unmark • Changes save automatically</div>
+                <div onclick="showSection('dashboard')" class="cursor-pointer text-amber-500 hover:text-amber-400 flex items-center gap-x-1">
+                    <span>Back to quick check-ins</span> <i class="fa-solid fa-arrow-right text-xs"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCRIPTURE -->
+        <section id="scripture" class="section pt-8 max-w-5xl mx-auto">
+            <div class="mb-8">
+                <h2 class="text-3xl tracking-tighter font-semibold heading-serif">Feast on the Word</h2>
+                <p class="text-zinc-400">A small library of Scripture to nourish your Rule of Life. Draw randomly or filter by practice.</p>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-4 mb-6">
+                <div class="flex-1">
+                    <div class="relative">
+                        <input type="text" id="verse-search" placeholder="Search verses (e.g. rest, spirit, grace...)" 
+                               onkeyup="filterVerses()"
+                               class="w-full bg-zinc-900 border border-zinc-700 focus:border-amber-600 pl-11 rounded-3xl py-3 text-sm focus:outline-none">
+                        <i class="fa-solid fa-search absolute left-4 top-3.5 text-zinc-500"></i>
+                    </div>
+                </div>
+                <div class="flex gap-x-2">
+                    <select id="verse-filter-practice" onchange="filterVerses()" class="bg-zinc-900 border border-zinc-700 rounded-3xl px-4 text-sm focus:outline-none">
+                        <option value="">All practices</option>
+                        <!-- Populated by JS -->
+                    </select>
+                    <button onclick="drawRandomVerse()" 
+                            class="px-6 rounded-3xl bg-gradient-to-r from-amber-600/90 to-orange-600/90 hover:brightness-105 flex items-center gap-x-2 text-sm whitespace-nowrap">
+                        <i class="fa-solid fa-dice"></i>
+                        <span>Draw a Verse</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Random / Featured Verse -->
+            <div id="featured-verse" class="hidden mb-8">
+                <div class="bg-zinc-900 border-l-4 border-amber-600 rounded-3xl p-7">
+                    <div class="flex justify-between">
+                        <div>
+                            <div id="featured-ref" class="font-semibold text-amber-400"></div>
+                            <div id="featured-text" class="mt-3 text-lg leading-relaxed text-zinc-100"></div>
+                        </div>
+                        <div>
+                            <button onclick="copyVerse()" class="text-xs px-3 py-1 rounded-2xl border border-zinc-700 hover:bg-zinc-800">
+                                <i class="fa-solid fa-copy mr-1"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Verse Grid -->
+            <div id="verse-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="mt-16 pt-8 border-t border-zinc-800 text-center text-xs text-zinc-500 max-w-3xl mx-auto">
+            <div class="flex flex-col items-center gap-y-3">
+                <div>
+                    Built with hope by <span class="text-amber-400">SamaKaze 🦊</span> • For the wandering ones finding their way Home.
+                </div>
+                <div class="max-w-md">
+                    This is a personal spiritual formation tool, not professional advice, therapy, or medical guidance. 
+                    Pair it with your local church community, pastor, counselor, or recovery group. 
+                    Your data lives only in your browser (localStorage). Export anytime.
+                </div>
+                <div class="text-[10px] text-zinc-600 pt-2">
+                    “The wind blows wherever it pleases... So it is with everyone born of the Spirit.” — John 3:8
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Practice Detail Modal -->
+    <div id="practice-modal" onclick="if (event.target.id === 'practice-modal') closeModal()" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div onclick="event.stopImmediatePropagation()" class="modal bg-zinc-900 border border-zinc-700 w-full max-w-lg rounded-3xl overflow-hidden">
+            <!-- Modal Header -->
+            <div class="px-6 pt-5 pb-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-950">
+                <div class="flex items-center gap-x-3" id="modal-header-content">
+                    <!-- Populated by JS -->
+                </div>
+                <button onclick="closeModal()" class="text-zinc-400 hover:text-white p-2 -mr-2">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6" id="modal-body">
+                <!-- Dynamic content including journal -->
+            </div>
+            
+            <div class="px-6 py-4 bg-zinc-950 border-t border-zinc-800 flex justify-end gap-x-3">
+                <button onclick="closeModal()" class="px-5 py-2 text-sm rounded-2xl border border-zinc-700 hover:bg-zinc-900">Close</button>
+                <button onclick="checkInFromModal()" id="modal-checkin-btn"
+                        class="px-6 py-2 text-sm rounded-2xl bg-emerald-600 hover:bg-emerald-500 flex items-center gap-x-2 text-white">
+                    <i class="fa-solid fa-check"></i>
+                    <span>Mark Today</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Journey / Progress Summary Modal -->
+    <div id="journey-modal" onclick="if (event.target.id === 'journey-modal') closeJourneyModal()" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div onclick="event.stopImmediatePropagation()" class="modal bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-3xl p-6">
+            <div class="flex justify-between items-center mb-5">
+                <h3 class="font-semibold text-xl">My Journey</h3>
+                <button onclick="closeJourneyModal()" class="text-zinc-400 hover:text-white">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div id="journey-content" class="space-y-4 text-sm">
+                <!-- Populated by JS -->
+            </div>
+            
+            <div class="mt-6 text-center">
+                <button onclick="closeJourneyModal()" class="px-6 py-2 text-sm rounded-2xl border border-zinc-700 hover:bg-zinc-900">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-[200] flex flex-col gap-y-2"></div>
+
+    <script>
+        // Tailwind script configuration
+        function initTailwind() {
+            document.documentElement.style.setProperty('--accent', '#d97706');
+            
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        fontFamily: {
+                            'serif-custom': ['Playfair Display', 'Georgia', 'serif']
+                        }
+                    }
+                }
+            };
+        }
+
+        // Data model
+        let data = {
+            completions: {},
+            journals: {},           // { "sabbath": { "2026-07-11": "note text" } }
+            lastUpdated: null
+        };
+
+        const PRACTICES = [
+            { id: 'sabbath', name: 'Sabbath', emoji: '🕊️', shortDesc: 'Rest from striving. Delight in God and creation one day each week.', accent: 'teal' },
+            { id: 'solitude', name: 'Solitude', emoji: '🌲', shortDesc: 'Withdrawing from noise and people to be alone with God.', accent: 'emerald' },
+            { id: 'prayer', name: 'Prayer', emoji: '🙏', shortDesc: 'Speaking honestly with God and learning to listen.', accent: 'indigo' },
+            { id: 'fasting', name: 'Fasting', emoji: '🌾', shortDesc: 'Abstaining to feast on God\'s presence.', accent: 'amber' },
+            { id: 'scripture', name: 'Scripture', emoji: '📜', shortDesc: 'Reading, meditating, and hiding God\'s Word in your heart.', accent: 'orange' },
+            { id: 'community', name: 'Community', emoji: '🤝', shortDesc: 'Gathering with other believers for encouragement and worship.', accent: 'sky' },
+            { id: 'generosity', name: 'Generosity', emoji: '💚', shortDesc: 'Cheerful giving of time, money, and resources.', accent: 'rose' },
+            { id: 'service', name: 'Service', emoji: '🫶', shortDesc: 'Using your gifts to love and serve others, especially the overlooked.', accent: 'lime' },
+            { id: 'witness', name: 'Witness', emoji: '✨', shortDesc: 'Sharing the hope and love of Jesus through word and life.', accent: 'violet' }
+        ];
+
+        // Scripture library
+        const VERSES = [
+            { id: 1, ref: "Matthew 11:28-30", text: "Come to me, all who labor and are heavy laden, and I will give you rest. Take my yoke upon you, and learn from me, for I am gentle and lowly in heart, and you will find rest for your souls. For my yoke is easy, and my burden is light.", tags: ["sabbath", "prayer", "rest"] },
+            { id: 2, ref: "Psalm 46:10", text: "Be still, and know that I am God. I will be exalted among the nations, I will be exalted in the earth!", tags: ["solitude", "prayer", "sabbath"] },
+            { id: 3, ref: "Exodus 20:8-10", text: "Remember the Sabbath day, to keep it holy. Six days you shall labor, and do all your work, but the seventh day is a Sabbath to the Lord your God.", tags: ["sabbath"] },
+            { id: 4, ref: "Mark 2:27", text: "And he said to them, 'The Sabbath was made for man, not man for the Sabbath.'", tags: ["sabbath"] },
+            { id: 5, ref: "1 Thessalonians 5:16-18", text: "Rejoice always, pray without ceasing, give thanks in all circumstances; for this is the will of God in Christ Jesus for you.", tags: ["prayer", "community"] },
+            { id: 6, ref: "Romans 8:26", text: "Likewise the Spirit helps us in our weakness. For we do not know what to pray for as we ought, but the Spirit himself intercedes for us with groanings too deep for words.", tags: ["prayer", "solitude"] },
+            { id: 7, ref: "Matthew 6:6", text: "But when you pray, go into your room and shut the door and pray to your Father who is in secret. And your Father who sees in secret will reward you.", tags: ["prayer", "solitude"] },
+            { id: 8, ref: "Psalm 1:2-3", text: "But his delight is in the law of the Lord, and on his law he meditates day and night. He is like a tree planted by streams of water that yields its fruit in its season, and its leaf does not wither.", tags: ["scripture", "solitude"] },
+            { id: 9, ref: "Joshua 1:8", text: "This Book of the Law shall not depart from your mouth, but you shall meditate on it day and night, so that you may be careful to do according to all that is written in it. For then you will make your way prosperous, and then you will have good success.", tags: ["scripture"] },
+            { id: 10, ref: "Isaiah 58:6, 9-10", text: "Is not this the fast that I choose: to loose the bonds of wickedness... Then you shall call, and the Lord will answer; you shall cry, and he will say, 'Here I am.'", tags: ["fasting", "service", "generosity"] },
+            { id: 11, ref: "Acts 2:42", text: "And they devoted themselves to the apostles' teaching and the fellowship, to the breaking of bread and the prayers.", tags: ["community", "scripture", "prayer"] },
+            { id: 12, ref: "Hebrews 10:24-25", text: "And let us consider how to stir up one another to love and good works, not neglecting to meet together, as is the habit of some, but encouraging one another, and all the more as you see the Day drawing near.", tags: ["community"] },
+            { id: 13, ref: "2 Corinthians 9:7-8", text: "Each one must give as he has decided in his heart, not reluctantly or under compulsion, for God loves a cheerful giver. And God is able to make all grace abound to you...", tags: ["generosity"] },
+            { id: 14, ref: "Matthew 25:40", text: "And the King will answer them, 'Truly, I say to you, as you did it to one of the least of these my brothers, you did it to me.'", tags: ["service", "generosity", "witness"] },
+            { id: 15, ref: "1 Peter 3:15", text: "But in your hearts honor Christ the Lord as holy, always being prepared to make a defense to anyone who asks you for a reason for the hope that is in you; yet do it with gentleness and respect.", tags: ["witness"] },
+            { id: 16, ref: "Matthew 5:14-16", text: "You are the light of the world. A city set on a hill cannot be hidden. Nor do people light a lamp and put it under a basket, but on a stand, and it gives light to all in the house.", tags: ["witness"] },
+            { id: 17, ref: "Galatians 6:2", text: "Bear one another's burdens, and so fulfill the law of Christ.", tags: ["community", "service"] },
+            { id: 18, ref: "Philippians 4:6-7", text: "Do not be anxious about anything, but in everything by prayer and supplication with thanksgiving let your requests be made known to God. And the peace of God, which surpasses all understanding, will guard your hearts and your minds in Christ Jesus.", tags: ["prayer"] },
+            { id: 19, ref: "Lamentations 3:22-23", text: "The steadfast love of the Lord never ceases; his mercies never come to an end; they are new every morning; great is your faithfulness.", tags: ["prayer", "rest", "sabbath"] },
+            { id: 20, ref: "John 15:4-5", text: "Abide in me, and I in you. As the branch cannot bear fruit by itself, unless it abides in the vine, neither can you, unless you abide in me. I am the vine; you are the branches.", tags: ["solitude", "prayer", "scripture"] },
+            { id: 21, ref: "Psalm 23:1-3", text: "The Lord is my shepherd; I shall not want. He makes me lie down in green pastures. He leads me beside still waters. He restores my soul.", tags: ["solitude", "sabbath", "prayer"] },
+            { id: 22, ref: "Ephesians 2:8-10", text: "For by grace you have been saved through faith. And this is not your own doing; it is the gift of God, not a result of works, so that no one may boast. For we are his workmanship, created in Christ Jesus for good works...", tags: ["generosity", "service", "witness"] }
+        ];
+
+        const AFFIRMATIONS = [
+            "New mercies every morning. You're held.",
+            "Small steps of faithfulness are seen by the Father.",
+            "Grace upon grace. No performance required.",
+            "The Spirit helps you in your weakness.",
+            "Progress, not perfection. You are beloved.",
+            "Even when it feels small, it matters to God.",
+            "The wind of the Spirit is gentle with you.",
+            "One day at a time, beloved. You are not alone.",
+            "Your consistency is an offering of worship.",
+            "Rest is holy. You've done enough today."
+        ];
+
+        let currentGentlePracticeId = null;
+        let currentDailyWord = null;
+
+        function getToday() {
+            const d = new Date();
+            return d.toISOString().split('T')[0];
+        }
+
+        function getWeekStart(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            d.setDate(d.getDate() - day);
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+
+        // Load / Save
+        function loadData() {
+            const saved = localStorage.getItem('wanderingRule_v2');
+            if (saved) {
+                try {
+                    data = JSON.parse(saved);
+                    if (!data.completions) data.completions = {};
+                    if (!data.journals) data.journals = {};
+                } catch (e) {
+                    data = { completions: {}, journals: {}, lastUpdated: null };
+                }
+            } else {
+                data = { completions: {}, journals: {}, lastUpdated: getToday() };
+            }
+        }
+
+        function saveData() {
+            data.lastUpdated = getToday();
+            localStorage.setItem('wanderingRule_v2', JSON.stringify(data));
+        }
+
+        // Streak calculation
+        function getCurrentStreak(practiceId) {
+            const dates = data.completions[practiceId] || [];
+            if (!dates.length) return 0;
+
+            const completedSet = new Set(dates);
+            let current = new Date(getToday() + 'T00:00:00');
+            let streak = 0;
+
+            while (true) {
+                const dateStr = current.toISOString().split('T')[0];
+                if (completedSet.has(dateStr)) {
+                    streak++;
+                    current.setDate(current.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+            return streak;
+        }
+
+        function getLongestStreak(practiceId) {
+            const dates = [...(data.completions[practiceId] || [])].sort();
+            if (dates.length === 0) return 0;
+
+            let maxStreak = 1;
+            let currentStreak = 1;
+
+            for (let i = 1; i < dates.length; i++) {
+                const prev = new Date(dates[i-1] + 'T00:00:00');
+                const curr = new Date(dates[i] + 'T00:00:00');
+                const diffDays = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
+                
+                if (diffDays === 1) {
+                    currentStreak++;
+                    maxStreak = Math.max(maxStreak, currentStreak);
+                } else {
+                    currentStreak = 1;
+                }
+            }
+            return maxStreak;
+        }
+
+        function getWeekCompletionsCount(weekStart) {
+            let count = 0;
+            const weekDates = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(weekStart);
+                d.setDate(d.getDate() + i);
+                weekDates.push(d.toISOString().split('T')[0]);
+            }
+
+            Object.keys(data.completions).forEach(pid => {
+                const set = new Set(data.completions[pid] || []);
+                weekDates.forEach(dateStr => {
+                    if (set.has(dateStr)) count++;
+                });
+            });
+            return count;
+        }
+
+        function updateDashboardStats() {
+            const active = Object.keys(data.completions).filter(pid => 
+                (data.completions[pid] || []).length > 0
+            ).length;
+            document.getElementById('active-practices').textContent = active;
+
+            let longest = 0;
+            PRACTICES.forEach(p => {
+                const s = getCurrentStreak(p.id);
+                if (s > longest) longest = s;
+            });
+            document.getElementById('longest-streak').textContent = longest;
+
+            const weekStart = getWeekStart(new Date());
+            const weekCount = getWeekCompletionsCount(weekStart);
+            document.getElementById('week-completions').textContent = weekCount;
+        }
+
+        // Render practice cards
+        function renderPracticeCards() {
+            const grid = document.getElementById('practice-grid');
+            grid.innerHTML = '';
+
+            PRACTICES.forEach(practice => {
+                const streak = getCurrentStreak(practice.id);
+                const hasToday = (data.completions[practice.id] || []).includes(getToday());
+
+                const card = document.createElement('div');
+                card.className = `practice-card bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-3xl p-5 flex flex-col h-full cursor-pointer`;
+                card.onclick = (e) => {
+                    if (!e.target.closest('button')) {
+                        showPracticeModal(practice.id);
+                    }
+                };
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="flex items-center gap-x-3">
+                            <div class="text-4xl opacity-90">${practice.emoji}</div>
+                            <div>
+                                <h4 class="font-semibold text-xl tracking-tight">${practice.name}</h4>
+                                <p class="text-xs text-zinc-400 line-clamp-2 pr-2 mt-0.5">${practice.shortDesc}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="text-right flex-shrink-0">
+                            <div class="streak-number text-5xl font-semibold leading-none ${streak > 0 ? 'text-emerald-400' : 'text-zinc-600'}">${streak}</div>
+                            <div class="text-[10px] uppercase tracking-[1px] text-zinc-500 mt-0.5">DAY STREAK</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-auto pt-5">
+                        <button onclick="event.stopImmediatePropagation(); checkIn('${practice.id}', this)" 
+                                class="w-full py-[13px] text-sm font-medium rounded-2xl flex items-center justify-center gap-x-2 transition-all active:scale-[0.985] 
+                                ${hasToday ? 'bg-emerald-900/60 text-emerald-400 border border-emerald-800' : 'bg-gradient-to-r from-amber-600 to-orange-600 hover:brightness-105 text-white'}">
+                            ${hasToday 
+                                ? `<i class="fa-solid fa-check mr-1.5"></i> <span>Marked for today — Thank you</span>` 
+                                : `<span>Mark today as done</span>`}
+                        </button>
+                        
+                        <button onclick="event.stopImmediatePropagation(); showPracticeModal('${practice.id}')" 
+                                class="mt-2 w-full text-center text-xs py-1 text-zinc-400 hover:text-zinc-200 transition-colors flex items-center justify-center gap-x-1">
+                            <span>View history &amp; journal</span>
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function updateAllStreaksAndUI() {
+            renderPracticeCards();
+            updateDashboardStats();
+            renderDailyWord();
+            renderGentleInvitation();
+            
+            const trackSection = document.getElementById('weekly-track');
+            if (trackSection.classList.contains('active')) {
+                renderWeeklyGrid();
+            }
+        }
+
+        // Check-in
+        function checkIn(practiceId, buttonEl = null) {
+            const todayStr = getToday();
+            if (!data.completions[practiceId]) data.completions[practiceId] = [];
+            
+            const arr = data.completions[practiceId];
+            
+            if (arr.includes(todayStr)) {
+                showToast("Already marked for today. Rest in that grace.", "info");
+                return;
+            }
+            
+            arr.push(todayStr);
+            arr.sort();
+            saveData();
+            
+            updateAllStreaksAndUI();
+            
+            const affirmation = AFFIRMATIONS[Math.floor(Math.random() * AFFIRMATIONS.length)];
+            showToast(affirmation, "success");
+            
+            if (buttonEl) {
+                buttonEl.innerHTML = `<i class="fa-solid fa-check mr-1.5"></i> <span>Marked for today — Thank you</span>`;
+                buttonEl.className = buttonEl.className.replace('from-amber-600 to-orange-600', 'bg-emerald-900/60 text-emerald-400 border border-emerald-800');
+            }
+            
+            const modal = document.getElementById('practice-modal');
+            if (!modal.classList.contains('hidden') && modal.dataset.currentPractice === practiceId) {
+                showPracticeModal(practiceId);
+            }
+        }
+
+        function checkInFromModal() {
+            const modal = document.getElementById('practice-modal');
+            const pid = modal.dataset.currentPractice;
+            if (pid) {
+                checkIn(pid);
+            }
+        }
+
+        // Daily Word on Dashboard
+        function getDailyWord() {
+            // Seed by date for consistency throughout the day
+            const today = getToday();
+            let seed = 0;
+            for (let i = 0; i < today.length; i++) {
+                seed += today.charCodeAt(i);
+            }
+            const index = seed % VERSES.length;
+            return VERSES[index];
+        }
+
+        function renderDailyWord() {
+            const container = document.getElementById('daily-word-content');
+            if (!container) return;
+
+            currentDailyWord = getDailyWord();
+            
+            container.innerHTML = `
+                <div class="mb-1">
+                    <span class="font-semibold text-amber-400">${currentDailyWord.ref}</span>
+                </div>
+                <p class="text-sm text-zinc-300 leading-snug line-clamp-3">"${currentDailyWord.text}"</p>
+                <div class="mt-3 flex gap-x-2">
+                    <button onclick="copyDailyWord()" class="text-xs px-3 py-1 rounded-2xl border border-zinc-700 hover:bg-zinc-800 flex items-center gap-x-1">
+                        <i class="fa-solid fa-copy text-xs"></i> <span>Copy</span>
+                    </button>
+                    <button onclick="goToScriptureSection()" class="text-xs px-3 py-1 rounded-2xl border border-zinc-700 hover:bg-zinc-800 flex items-center gap-x-1">
+                        <span>Browse all</span>
+                    </button>
+                </div>
+            `;
+        }
+
+        function refreshDailyWord() {
+            // Force a new random one
+            const container = document.getElementById('daily-word-content');
+            const randomIndex = Math.floor(Math.random() * VERSES.length);
+            currentDailyWord = VERSES[randomIndex];
+            
+            container.innerHTML = `
+                <div class="mb-1">
+                    <span class="font-semibold text-amber-400">${currentDailyWord.ref}</span>
+                </div>
+                <p class="text-sm text-zinc-300 leading-snug line-clamp-3">"${currentDailyWord.text}"</p>
+                <div class="mt-3 flex gap-x-2">
+                    <button onclick="copyDailyWord()" class="text-xs px-3 py-1 rounded-2xl border border-zinc-700 hover:bg-zinc-800 flex items-center gap-x-1">
+                        <i class="fa-solid fa-copy text-xs"></i> <span>Copy</span>
+                    </button>
+                    <button onclick="goToScriptureSection()" class="text-xs px-3 py-1 rounded-2xl border border-zinc-700 hover:bg-zinc-800 flex items-center gap-x-1">
+                        <span>Browse all</span>
+                    </button>
+                </div>
+            `;
+        }
+
+        function copyDailyWord() {
+            if (!currentDailyWord) return;
+            const text = `${currentDailyWord.ref}\n\n${currentDailyWord.text}`;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Verse copied to clipboard', 'info');
+            });
+        }
+
+        function goToScriptureSection() {
+            showSection('scripture');
+        }
+
+        // Gentle Invitation
+        function renderGentleInvitation() {
+            const container = document.getElementById('gentle-invitation-content');
+            if (!container) return;
+
+            // Pick a random practice for today
+            const randomIndex = Math.floor(Math.random() * PRACTICES.length);
+            const practice = PRACTICES[randomIndex];
+            currentGentlePracticeId = practice.id;
+
+            const suggestions = {
+                'sabbath': 'Even 2–3 hours of true rest counts. Let yourself stop without guilt.',
+                'solitude': 'Just 5–10 minutes of quiet with God is enough today.',
+                'prayer': 'Try short breath prayers: “Jesus, I need You.”',
+                'fasting': 'A simple fast from one thing that drains you.',
+                'scripture': 'One verse read slowly three times. Let it sink in.',
+                'community': 'Text one safe person or join a low-pressure gathering.',
+                'generosity': 'Give what you can — a kind word or small gift counts deeply.',
+                'service': 'One quiet act of love. No spotlight needed.',
+                'witness': 'Your honest story of grace is powerful. Share only what feels right.'
+            };
+
+            const suggestion = suggestions[practice.id] || 'Take one small faithful step today.';
+
+            container.innerHTML = `
+                <div class="flex items-start gap-x-3">
+                    <span class="text-3xl mt-0.5">${practice.emoji}</span>
+                    <div>
+                        <div class="font-medium">${practice.name}</div>
+                        <div class="text-xs text-zinc-400 mt-0.5">${suggestion}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function actOnGentleInvitation() {
+            if (!currentGentlePracticeId) return;
+            checkIn(currentGentlePracticeId);
+            
+            // Refresh invitation after check-in
+            setTimeout(() => {
+                renderGentleInvitation();
+            }, 600);
+        }
+
+        // Practice Modal with Journal
+        function showPracticeModal(practiceId) {
+            const modal = document.getElementById('practice-modal');
+            const headerContent = document.getElementById('modal-header-content');
+            const body = document.getElementById('modal-body');
+            const checkinBtn = document.getElementById('modal-checkin-btn');
+
+            modal.dataset.currentPractice = practiceId;
+
+            const practice = PRACTICES.find(p => p.id === practiceId);
+            const streak = getCurrentStreak(practiceId);
+            const longest = getLongestStreak(practiceId);
+            const completions = data.completions[practiceId] || [];
+            const hasToday = completions.includes(getToday());
+
+            // Header
+            headerContent.innerHTML = `
+                <div class="flex items-center gap-x-4">
+                    <div class="text-5xl">${practice.emoji}</div>
+                    <div>
+                        <div class="font-semibold text-2xl tracking-tight">${practice.name}</div>
+                        <div class="text-emerald-400 text-sm flex items-center gap-x-1.5">
+                            <span class="font-mono text-xl leading-none">${streak}</span> 
+                            <span class="text-xs tracking-wider text-emerald-500/80">CURRENT STREAK</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Body with journal
+            const todayNote = (data.journals[practiceId] && data.journals[practiceId][getToday()]) || '';
+            
+            let html = `
+                <div class="mb-5">
+                    <p class="text-sm text-zinc-300">${practice.shortDesc}</p>
+                    
+                    <div class="flex items-center gap-x-6 mt-4 text-xs">
+                        <div>
+                            <span class="block text-zinc-500">Longest streak</span>
+                            <span class="font-semibold text-lg text-amber-400">${longest} days</span>
+                        </div>
+                        <div>
+                            <span class="block text-zinc-500">Total days practiced</span>
+                            <span class="font-semibold text-lg">${completions.length}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Journal Section -->
+                <div class="mb-2">
+                    <div class="text-xs uppercase tracking-widest text-zinc-500 mb-2 flex items-center gap-x-2">
+                        <i class="fa-solid fa-pen"></i>
+                        <span>Reflection for today</span>
+                    </div>
+                    <textarea id="journal-textarea" rows="3" placeholder="What did God show you? How was your heart today?" 
+                              class="w-full bg-zinc-950 border border-zinc-700 focus:border-amber-600 rounded-3xl px-4 py-3 text-sm resize-y">${todayNote}</textarea>
+                    <button onclick="saveJournal('${practiceId}')" class="mt-2 text-xs px-4 py-1.5 rounded-2xl border border-zinc-700 hover:bg-zinc-800">
+                        Save reflection
+                    </button>
+                </div>
+            `;
+
+            // 14-day mini calendar
+            html += `<div class="mt-4"><div class="text-xs uppercase tracking-widest text-zinc-500 mb-2">Last 14 days — tap to toggle</div>`;
+            html += `<div class="grid grid-cols-7 gap-1.5">`;
+
+            const today = new Date(getToday() + 'T00:00:00');
+            for (let i = 13; i >= 0; i--) {
+                const d = new Date(today);
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toISOString().split('T')[0];
+                const isCompleted = completions.includes(dateStr);
+                const dayLabel = d.toLocaleDateString('en-US', { weekday: 'narrow' });
+                const dayNum = d.getDate();
+                const isToday = dateStr === getToday();
+
+                html += `
+                    <div onclick="toggleDateInModal('${practiceId}', '${dateStr}', this)" 
+                         class="habit-day cursor-pointer border text-center py-2 rounded-2xl text-xs flex flex-col items-center justify-center transition-all active:scale-95
+                         ${isCompleted ? 'completed border-emerald-600 bg-emerald-900/70' : 'border-zinc-700 bg-zinc-800 hover:bg-zinc-700'} 
+                         ${isToday ? 'ring-1 ring-offset-2 ring-offset-zinc-900 ring-amber-500' : ''}">
+                        <div class="text-[9px] text-zinc-400">${dayLabel}</div>
+                        <div class="font-semibold text-base leading-none mt-px ${isCompleted ? 'text-emerald-300' : ''}">${dayNum}</div>
+                        ${isToday ? `<div class="text-[7px] text-amber-400 mt-0.5">TODAY</div>` : ''}
+                    </div>
+                `;
+            }
+            html += `</div></div>`;
+
+            body.innerHTML = html;
+
+            // Check-in button state
+            if (hasToday) {
+                checkinBtn.innerHTML = `<i class="fa-solid fa-check mr-2"></i> <span>Already marked today</span>`;
+                checkinBtn.disabled = true;
+                checkinBtn.className = `px-6 py-2 text-sm rounded-2xl bg-emerald-900/60 text-emerald-400 border border-emerald-800 flex items-center gap-x-2`;
+            } else {
+                checkinBtn.innerHTML = `<i class="fa-solid fa-check"></i> <span>Mark Today</span>`;
+                checkinBtn.disabled = false;
+                checkinBtn.className = `px-6 py-2 text-sm rounded-2xl bg-emerald-600 hover:bg-emerald-500 flex items-center gap-x-2 text-white`;
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function saveJournal(practiceId) {
+            const textarea = document.getElementById('journal-textarea');
+            if (!textarea) return;
+
+            const note = textarea.value.trim();
+            const todayStr = getToday();
+
+            if (!data.journals[practiceId]) data.journals[practiceId] = {};
+            data.journals[practiceId][todayStr] = note;
+
+            saveData();
+            showToast('Reflection saved. Thank you for being honest with God.', 'success');
+        }
+
+        function toggleDateInModal(practiceId, dateStr, element) {
+            if (!data.completions[practiceId]) data.completions[practiceId] = [];
+            
+            const arr = data.completions[practiceId];
+            const idx = arr.indexOf(dateStr);
+            
+            if (idx > -1) {
+                arr.splice(idx, 1);
+                element.classList.remove('completed', 'border-emerald-600', 'bg-emerald-900/70');
+                element.classList.add('border-zinc-700', 'bg-zinc-800');
+            } else {
+                arr.push(dateStr);
+                arr.sort();
+                element.classList.add('completed', 'border-emerald-600', 'bg-emerald-900/70');
+                element.classList.remove('border-zinc-700', 'bg-zinc-800');
+            }
+            
+            saveData();
+            updateAllStreaksAndUI();
+            
+            const modal = document.getElementById('practice-modal');
+            if (modal.dataset.currentPractice === practiceId) {
+                showPracticeModal(practiceId);
+            }
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('practice-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        // Journey / Progress Summary Modal
+        function showJourneyModal() {
+            const modal = document.getElementById('journey-modal');
+            const content = document.getElementById('journey-content');
+
+            let totalCheckins = 0;
+            let longestOverall = 0;
+            let mostConsistent = { name: '', count: 0 };
+
+            PRACTICES.forEach(p => {
+                const comps = data.completions[p.id] || [];
+                totalCheckins += comps.length;
+                
+                const longest = getLongestStreak(p.id);
+                if (longest > longestOverall) longestOverall = longest;
+                
+                if (comps.length > mostConsistent.count) {
+                    mostConsistent = { name: p.name, count: comps.length };
+                }
+            });
+
+            const avgStreak = totalCheckins > 0 ? Math.round(totalCheckins / PRACTICES.length) : 0;
+
+            content.innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center bg-zinc-950 rounded-2xl p-4">
+                        <div>
+                            <div class="text-xs text-zinc-500">Total check-ins</div>
+                            <div class="text-3xl font-semibold">${totalCheckins}</div>
+                        </div>
+                        <i class="fa-solid fa-calendar-check text-3xl text-emerald-500/70"></i>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-zinc-950 rounded-2xl p-4">
+                            <div class="text-xs text-zinc-500">Longest streak ever</div>
+                            <div class="text-2xl font-semibold text-amber-400">${longestOverall} days</div>
+                        </div>
+                        <div class="bg-zinc-950 rounded-2xl p-4">
+                            <div class="text-xs text-zinc-500">Most consistent</div>
+                            <div class="text-lg font-medium">${mostConsistent.name}</div>
+                            <div class="text-xs text-emerald-400">${mostConsistent.count} days</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-zinc-950 rounded-2xl p-4 text-center">
+                        <div class="text-xs text-zinc-500 mb-1">A word for your journey</div>
+                        <div class="text-emerald-300 italic">"The Lord is near to all who call on him."</div>
+                        <div class="text-[10px] text-zinc-500 mt-1">— Psalm 145:18</div>
+                    </div>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeJourneyModal() {
+            const modal = document.getElementById('journey-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        // Weekly Grid
+        let currentWeekStart = null;
+
+        function renderWeeklyGrid(weekStart = null) {
+            if (!weekStart) {
+                if (!currentWeekStart) currentWeekStart = getWeekStart(new Date());
+                weekStart = currentWeekStart;
+            } else {
+                currentWeekStart = weekStart;
+            }
+
+            const table = document.getElementById('weekly-grid-table');
+            table.innerHTML = '';
+
+            let theadHTML = `<thead><tr class="text-xs text-zinc-400">
+                <th class="sticky left-0 bg-zinc-900 z-10 text-left px-3 py-2 rounded-tl-2xl">Practice</th>`;
+            
+            const weekDates = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(weekStart);
+                d.setDate(d.getDate() + i);
+                const dateStr = d.toISOString().split('T')[0];
+                weekDates.push(dateStr);
+                
+                const isToday = dateStr === getToday();
+                theadHTML += `<th class="px-1.5 py-2 font-normal ${isToday ? 'text-amber-400' : ''}">
+                    <div class="text-center">
+                        <div class="text-[10px]">${d.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                        <div class="font-mono text-sm ${isToday ? 'font-semibold' : ''}">${d.getDate()}</div>
+                    </div>
+                </th>`;
+            }
+            theadHTML += `</tr></thead>`;
+            table.innerHTML = theadHTML;
+
+            let tbodyHTML = `<tbody>`;
+            
+            PRACTICES.forEach(practice => {
+                const completedSet = new Set(data.completions[practice.id] || []);
+                
+                tbodyHTML += `<tr class="hover:bg-zinc-950/60">
+                    <td class="sticky left-0 bg-zinc-900 z-10 px-3 py-2.5 text-sm font-medium whitespace-nowrap rounded-bl-2xl">
+                        <div class="flex items-center gap-x-2">
+                            <span>${practice.emoji}</span>
+                            <span>${practice.name}</span>
+                        </div>
+                    </td>`;
+                
+                weekDates.forEach(dateStr => {
+                    const isCompleted = completedSet.has(dateStr);
+                    const isToday = dateStr === getToday();
+                    
+                    tbodyHTML += `
+                        <td class="px-1 py-1">
+                            <div onclick="toggleWeeklyCell('${practice.id}', '${dateStr}', this)"
+                                 class="habit-day mx-auto w-8 h-8 flex items-center justify-center rounded-2xl cursor-pointer text-xs border transition-all
+                                 ${isCompleted ? 'bg-emerald-600 border-emerald-500 text-white' : 'bg-zinc-800 border-zinc-700 hover:bg-zinc-700 text-zinc-400'}
+                                 ${isToday ? 'ring-1 ring-amber-400 ring-offset-1 ring-offset-zinc-900' : ''}">
+                                ${isCompleted ? '<i class="fa-solid fa-check text-sm"></i>' : ''}
+                            </div>
+                        </td>`;
+                });
+                
+                tbodyHTML += `</tr>`;
+            });
+            
+            tbodyHTML += `</tbody>`;
+            table.innerHTML += tbodyHTML;
+        }
+
+        function toggleWeeklyCell(practiceId, dateStr, cellElement) {
+            if (!data.completions[practiceId]) data.completions[practiceId] = [];
+            const arr = data.completions[practiceId];
+            const idx = arr.indexOf(dateStr);
+
+            if (idx > -1) {
+                arr.splice(idx, 1);
+                cellElement.innerHTML = '';
+                cellElement.classList.remove('bg-emerald-600', 'border-emerald-500', 'text-white');
+                cellElement.classList.add('bg-zinc-800', 'border-zinc-700', 'text-zinc-400');
+            } else {
+                arr.push(dateStr);
+                arr.sort();
+                cellElement.innerHTML = '<i class="fa-solid fa-check text-sm"></i>';
+                cellElement.classList.add('bg-emerald-600', 'border-emerald-500', 'text-white');
+                cellElement.classList.remove('bg-zinc-800', 'border-zinc-700', 'text-zinc-400');
+            }
+            
+            saveData();
+            updateAllStreaksAndUI();
+        }
+
+        function prevWeek() {
+            const newStart = new Date(currentWeekStart);
+            newStart.setDate(newStart.getDate() - 7);
+            renderWeeklyGrid(newStart);
+        }
+
+        function nextWeek() {
+            const newStart = new Date(currentWeekStart);
+            newStart.setDate(newStart.getDate() + 7);
+            renderWeeklyGrid(newStart);
+        }
+
+        function goToCurrentWeek() {
+            currentWeekStart = getWeekStart(new Date());
+            renderWeeklyGrid(currentWeekStart);
+        }
+
+        // Scripture functions
+        function renderVerseFilterOptions() {
+            const select = document.getElementById('verse-filter-practice');
+            PRACTICES.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name;
+                select.appendChild(opt);
+            });
+        }
+
+        function filterVerses() {
+            const searchTerm = document.getElementById('verse-search').value.toLowerCase().trim();
+            const practiceFilter = document.getElementById('verse-filter-practice').value;
+            const grid = document.getElementById('verse-grid');
+            
+            grid.innerHTML = '';
+            
+            let filtered = VERSES;
+            
+            if (practiceFilter) {
+                filtered = filtered.filter(v => v.tags.includes(practiceFilter));
+            }
+            
+            if (searchTerm) {
+                filtered = filtered.filter(v => 
+                    v.ref.toLowerCase().includes(searchTerm) || 
+                    v.text.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-8 text-zinc-400">No verses match your search.</div>`;
+                return;
+            }
+            
+            filtered.forEach(verse => {
+                const card = document.createElement('div');
+                card.className = `verse-card bg-zinc-900 border border-zinc-700 hover:border-amber-700/60 rounded-3xl p-5 cursor-pointer`;
+                card.onclick = () => showVerseModal(verse);
+                
+                const tagsHTML = verse.tags.map(tag => {
+                    const p = PRACTICES.find(pr => pr.id === tag);
+                    return p ? `<span class="text-[10px] px-2 py-px bg-zinc-800 rounded">${p.name}</span>` : '';
+                }).join('');
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="font-semibold text-amber-400 text-sm">${verse.ref}</div>
+                        <div class="flex gap-x-1">${tagsHTML}</div>
+                    </div>
+                    <div class="mt-3 text-sm text-zinc-300 line-clamp-3 leading-snug">${verse.text}</div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function showVerseModal(verse) {
+            const modal = document.getElementById('practice-modal');
+            const headerContent = document.getElementById('modal-header-content');
+            const body = document.getElementById('modal-body');
+            
+            headerContent.innerHTML = `
+                <div>
+                    <div class="text-xs text-emerald-400 tracking-widest">SCRIPTURE</div>
+                    <div class="font-semibold text-xl text-amber-400">${verse.ref}</div>
+                </div>
+            `;
+            
+            body.innerHTML = `
+                <div class="prose prose-invert max-w-none">
+                    <p class="text-lg leading-relaxed text-zinc-100">"${verse.text}"</p>
+                </div>
+                
+                <div class="mt-6 flex flex-wrap gap-2">
+                    ${verse.tags.map(tag => {
+                        const p = PRACTICES.find(pr => pr.id === tag);
+                        return p ? `<div class="inline-flex items-center gap-x-1.5 text-xs bg-zinc-800 px-3 py-1 rounded-2xl"><span>${p.emoji}</span> <span>${p.name}</span></div>` : '';
+                    }).join('')}
+                </div>
+                
+                <div class="mt-6 text-xs text-center text-zinc-500">
+                    Meditate on this today. Let it shape your rhythm.
+                </div>
+            `;
+            
+            const checkinBtn = document.getElementById('modal-checkin-btn');
+            checkinBtn.style.display = 'none';
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            const originalClose = closeModal;
+            window.closeModal = function() {
+                checkinBtn.style.display = '';
+                originalClose();
+                window.closeModal = originalClose;
+            };
+        }
+
+        function drawRandomVerse() {
+            const randomIndex = Math.floor(Math.random() * VERSES.length);
+            const verse = VERSES[randomIndex];
+            
+            const featured = document.getElementById('featured-verse');
+            document.getElementById('featured-ref').innerHTML = verse.ref;
+            document.getElementById('featured-text').innerHTML = `"${verse.text}"`;
+            featured.classList.remove('hidden');
+            featured.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            setTimeout(() => {
+                filterVerses();
+            }, 1200);
+        }
+
+        function copyVerse() {
+            const ref = document.getElementById('featured-ref').innerText;
+            const text = document.getElementById('featured-text').innerText;
+            const full = `${ref}\n\n${text}`;
+            
+            navigator.clipboard.writeText(full).then(() => {
+                showToast('Verse copied to clipboard', 'info');
+            }).catch(() => {
+                prompt('Copy this verse:', full);
+            });
+        }
+
+        // Plan My Week
+        function generatePlan() {
+            const vibe = document.getElementById('energy-vibe').value;
+            const note = document.getElementById('week-note').value.trim();
+            const resultsDiv = document.getElementById('plan-results');
+            const grid = document.getElementById('plan-suggestions-grid');
+            
+            grid.innerHTML = '';
+            
+            let headerNote = '';
+            if (note) {
+                headerNote = `<div class="col-span-full mb-2 px-1"><div class="text-xs bg-zinc-950 border border-zinc-800 rounded-2xl p-3 text-zinc-300">Holding space for you: <em>"${note}"</em></div></div>`;
+            }
+            
+            grid.innerHTML = headerNote;
+
+            PRACTICES.forEach(practice => {
+                const suggestion = getSuggestionForPractice(practice.id, vibe);
+                
+                const card = document.createElement('div');
+                card.className = `bg-zinc-950 border border-zinc-800 rounded-3xl p-4 text-sm flex flex-col`;
+                
+                card.innerHTML = `
+                    <div class="flex items-center gap-x-2 mb-2">
+                        <span class="text-2xl">${practice.emoji}</span>
+                        <span class="font-semibold">${practice.name}</span>
+                    </div>
+                    <div class="text-zinc-300 text-[13.5px] leading-snug flex-1">${suggestion}</div>
+                    
+                    <div class="mt-3 pt-3 border-t border-zinc-800 text-[10px] text-emerald-400/70 flex items-center gap-x-1">
+                        <i class="fa-solid fa-seedling"></i>
+                        <span class="uppercase tracking-wider">Gentle invitation</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            
+            resultsDiv.classList.remove('hidden');
+            resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function getSuggestionForPractice(practiceId, vibe) {
+            const base = {
+                'sabbath': 'Set aside intentional time this week to truly rest — no agenda, no productivity. Let your soul breathe.',
+                'solitude': 'Carve out 10–20 minutes of quiet. No phone, no input. Just you and God. Start small if needed.',
+                'prayer': 'Practice short, honest prayers throughout the day. Whisper “Lord, have mercy” or simply sit in silence.',
+                'fasting': 'Consider a simple fast from one meal, social media, or a comfort. Use the hunger as a prompt to pray.',
+                'scripture': 'Read slowly. One chapter or even a few verses. Ask: “Jesus, what are You saying to me today?”',
+                'community': 'Reach out to one person this week — text, call, or share a meal. Or join a small gathering.',
+                'generosity': 'Give something freely this week without expectation. Time, a kind word, money, or help.',
+                'service': 'Look for one quiet way to serve someone — no spotlight needed. Let love be your motive.',
+                'witness': 'Share a small piece of your story or hope with someone this week, or simply live visibly as someone loved by God.'
+            };
+            
+            const lowEnergyMods = {
+                'sabbath': 'Try a “micro-Sabbath” — even 2–3 hours of true rest. It counts. Let yourself stop without guilt.',
+                'solitude': 'Sit in silence for just 5 minutes. That’s enough. God meets you in the small.',
+                'prayer': 'Use breath prayers or short cries: “Jesus, I need You.” The Spirit intercedes when words fail.',
+                'fasting': 'A gentle fast from one thing that drains you (scrolling, noise). No heroic measures required.',
+                'scripture': 'One verse. Read it slowly three times. Let it sink in. No pressure to finish a plan.',
+                'community': 'Text one safe person “thinking of you” or join a low-pressure online space. Connection in small doses.',
+                'generosity': 'Give what you can — even a prayer or encouraging word counts deeply.',
+                'service': 'Serve in a way that doesn’t overwhelm. A small act of kindness is Kingdom work.',
+                'witness': 'Your honest story of struggle + grace is powerful. Share only what feels safe and true.'
+            };
+            
+            let suggestion = base[practiceId];
+            
+            if (vibe === 'low-spoons' || vibe === 'recovery') {
+                suggestion = lowEnergyMods[practiceId] || suggestion;
+            } else if (vibe === 'grief') {
+                // Simplified grief mods
+                if (practiceId === 'sabbath') suggestion = 'Rest may feel impossible. Give yourself permission to lament as part of rest. God holds your tears.';
+                if (practiceId === 'prayer') suggestion = 'It’s okay if prayer is mostly tears or silence right now. “Lord, I hurt” is enough.';
+            } else if (vibe === 'nd-overwhelm') {
+                if (practiceId === 'solitude') suggestion = 'If silence is hard, try “parallel play” with God — sit with a calm activity and gentle awareness of Him.';
+            }
+            
+            return suggestion;
+        }
+
+        function clearPlanResults() {
+            document.getElementById('plan-results').classList.add('hidden');
+            document.getElementById('plan-suggestions-grid').innerHTML = '';
+        }
+
+        // Toast
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            
+            const toast = document.createElement('div');
+            toast.className = `gentle-toast max-w-xs px-5 py-3 rounded-3xl shadow-xl flex items-start gap-x-3 text-sm border 
+                ${type === 'success' ? 'bg-emerald-950 border-emerald-800 text-emerald-200' : 'bg-zinc-900 border-zinc-700 text-zinc-200'}`;
+            
+            toast.innerHTML = `
+                <div class="pt-0.5">
+                    ${type === 'success' 
+                        ? '<i class="fa-solid fa-check-circle text-emerald-400"></i>' 
+                        : '<i class="fa-solid fa-info-circle text-amber-400"></i>'}
+                </div>
+                <div class="flex-1 pr-1">${message}</div>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.transition = 'all 0.3s ease';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.parentNode.removeChild(toast), 250);
+            }, 4200);
+        }
+
+        // Export / Import
+        function exportData() {
+            const exportObj = {
+                version: "2.0",
+                exportedAt: new Date().toISOString(),
+                completions: data.completions,
+                journals: data.journals,
+                note: "Wandering Rule backup — import this file to restore your progress."
+            };
+            
+            const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `wandering-rule-backup-${getToday()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showToast('Backup downloaded. Keep it somewhere safe.', 'info');
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported.completions && typeof imported.completions === 'object') {
+                        if (confirm('Replace your current progress with the imported data? This cannot be undone.')) {
+                            data.completions = imported.completions;
+                            if (imported.journals) data.journals = imported.journals;
+                            saveData();
+                            updateAllStreaksAndUI();
+                            showToast('Data imported successfully. Welcome back.', 'success');
+                            
+                            const activeSection = document.querySelector('.section.active');
+                            if (activeSection && activeSection.id === 'weekly-track') {
+                                renderWeeklyGrid();
+                            }
+                        }
+                    } else {
+                        alert('Invalid backup file.');
+                    }
+                } catch (err) {
+                    alert('Could not read the file. Make sure it is a valid Wandering Rule backup.');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function markAllToday() {
+            if (!confirm('Mark all 9 practices as done for today? This is a big grace-filled step.')) return;
+            
+            const todayStr = getToday();
+            PRACTICES.forEach(p => {
+                if (!data.completions[p.id]) data.completions[p.id] = [];
+                if (!data.completions[p.id].includes(todayStr)) {
+                    data.completions[p.id].push(todayStr);
+                    data.completions[p.id].sort();
+                }
+            });
+            
+            saveData();
+            updateAllStreaksAndUI();
+            showToast('All practices marked for today. You are held in grace.', 'success');
+        }
+
+        function resetAllStreaks() {
+            if (!confirm('This will permanently delete ALL your check-in history. Are you sure?')) return;
+            if (!confirm('Last chance — this cannot be recovered. Proceed?')) return;
+            
+            data.completions = {};
+            data.journals = {};
+            saveData();
+            updateAllStreaksAndUI();
+            showToast('Data cleared. Fresh start with new mercies.', 'info');
+        }
+
+        // Section navigation
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            
+            const target = document.getElementById(sectionId);
+            target.classList.add('active');
+            
+            document.querySelectorAll('[id^="nav-"]').forEach(nav => nav.classList.remove('active'));
+            const navBtn = document.getElementById('nav-' + sectionId);
+            if (navBtn) navBtn.classList.add('active');
+            
+            if (sectionId === 'weekly-track' && currentWeekStart) {
+                renderWeeklyGrid(currentWeekStart);
+            } else if (sectionId === 'weekly-track') {
+                currentWeekStart = getWeekStart(new Date());
+                renderWeeklyGrid(currentWeekStart);
+            }
+            
+            if (sectionId === 'scripture') {
+                const grid = document.getElementById('verse-grid');
+                if (grid.children.length === 0) {
+                    filterVerses();
+                }
+            }
+            
+            const mobileNav = document.getElementById('mobile-nav');
+            if (mobileNav) mobileNav.remove();
+        }
+
+        function showMobileNav() {
+            const existing = document.getElementById('mobile-nav');
+            if (existing) existing.remove();
+            
+            const sheet = document.createElement('div');
+            sheet.id = 'mobile-nav';
+            sheet.className = 'fixed inset-0 bg-black/60 z-[150] flex items-end md:hidden';
+            sheet.innerHTML = `
+                <div onclick="event.target.remove()" class="absolute inset-0"></div>
+                <div onclick="event.stopImmediatePropagation()" class="relative bg-zinc-900 w-full rounded-t-3xl p-2 border-t border-zinc-700">
+                    <div class="flex justify-center py-2">
+                        <div class="w-9 h-1 bg-zinc-700 rounded-full"></div>
+                    </div>
+                    
+                    <div class="px-2 pb-6 space-y-1 text-base">
+                        <button onclick="showSection('dashboard'); document.getElementById('mobile-nav').remove()" class="w-full text-left px-5 py-3.5 flex items-center gap-x-3 rounded-2xl hover:bg-zinc-800">
+                            <i class="fa-solid fa-home w-5 text-center"></i> <span>Dashboard</span>
+                        </button>
+                        <button onclick="showSection('plan-week'); document.getElementById('mobile-nav').remove()" class="w-full text-left px-5 py-3.5 flex items-center gap-x-3 rounded-2xl hover:bg-zinc-800">
+                            <i class="fa-solid fa-calendar-week w-5 text-center"></i> <span>Plan My Week</span>
+                        </button>
+                        <button onclick="showSection('weekly-track'); document.getElementById('mobile-nav').remove()" class="w-full text-left px-5 py-3.5 flex items-center gap-x-3 rounded-2xl hover:bg-zinc-800">
+                            <i class="fa-solid fa-table w-5 text-center"></i> <span>Weekly Track</span>
+                        </button>
+                        <button onclick="showSection('scripture'); document.getElementById('mobile-nav').remove()" class="w-full text-left px-5 py-3.5 flex items-center gap-x-3 rounded-2xl hover:bg-zinc-800">
+                            <i class="fa-solid fa-book-open w-5 text-center"></i> <span>Scripture</span>
+                        </button>
+                        
+                        <div class="pt-4 mt-2 border-t border-zinc-800 px-5 flex gap-x-3 text-sm">
+                            <button onclick="exportData(); document.getElementById('mobile-nav').remove()" class="flex-1 py-2.5 border border-zinc-700 rounded-2xl">Export Data</button>
+                            <label class="flex-1 cursor-pointer">
+                                <div class="text-center py-2.5 border border-zinc-700 rounded-2xl">Import</div>
+                                <input type="file" accept=".json" class="hidden" onchange="importData(event); document.getElementById('mobile-nav').remove()">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(sheet);
+        }
+
+        // Keyboard shortcuts
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', function(e) {
+                if (e.metaKey && e.key === '/') {
+                    e.preventDefault();
+                    const search = document.getElementById('verse-search');
+                    if (search) {
+                        showSection('scripture');
+                        setTimeout(() => search.focus(), 50);
+                    }
+                }
+                
+                if (e.key === '?' && document.activeElement.tagName === 'BODY') {
+                    e.preventDefault();
+                    showSection('plan-week');
+                }
+                
+                if (e.key === 'Escape') {
+                    const modal = document.getElementById('practice-modal');
+                    if (!modal.classList.contains('hidden')) {
+                        closeModal();
+                    } else {
+                        const journey = document.getElementById('journey-modal');
+                        if (!journey.classList.contains('hidden')) closeJourneyModal();
+                    }
+                }
+            });
+        }
+
+        // Initialize
+        function initializeApp() {
+            initTailwind();
+            loadData();
+            
+            const todayEl = document.getElementById('today-date');
+            const d = new Date();
+            todayEl.textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            
+            renderPracticeCards();
+            updateDashboardStats();
+            renderDailyWord();
+            renderGentleInvitation();
+            
+            renderVerseFilterOptions();
+            filterVerses();
+            
+            currentWeekStart = getWeekStart(new Date());
+            
+            setupKeyboardShortcuts();
+            
+            document.getElementById('dashboard').classList.add('active');
+            
+            console.log('%c[Wandering Rule v2] Initialized with Daily Word, Gentle Invitation, Journal & Journey features.', 'color:#166534');
+        }
+
+        window.onload = initializeApp;
+    </script>
+</body>
+</html>
